@@ -20,6 +20,7 @@ import personinfo from './components/Personinfo.vue'
 import Tododetail from './components/tododetail.vue'
 import MyTask from './components/mytask.vue'
 import Checktask from './components/check.vue'
+import Checktaskdetail from './components/checkdetail.vue'
 
 import Todolistmobile from './components/Todolistmobile.vue'
 import Donelistmobile from './components/Donelistmobile.vue'
@@ -57,6 +58,7 @@ const routes = [
   {path: '/tododetail/:id', component: Tododetail},
   {path: '/mytask', component: MyTask},
   {path: '/checktask', component: Checktask},
+  {path: '/checktaskdetail/:id', component: Checktaskdetail},
 
   {path: '/mobiletodo', component: Todolistmobile},
   {path: '/mobilepicktasks', component: PickTasklistmobile},

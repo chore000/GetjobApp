@@ -9,7 +9,7 @@
 
         <div>
 
-          <x-textarea title="任务汇报" :max="500" placeholder="" :show-counter="false" :height="200" :rows="8"
+          <x-textarea title="" :max="500" placeholder="任务汇报，如有分数变动需求请在此提出" :show-counter="false" :height="200" :rows="8"
                       :cols="50" v-model="comment"></x-textarea>
           <x-button plain type="primary" @click.native="complete(task.id)">确认完成</x-button>
           <div @click="show=false">

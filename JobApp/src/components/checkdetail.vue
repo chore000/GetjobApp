@@ -7,8 +7,8 @@
     <!--<cell title="新增员工">-->
     <div v-transfer-dom>
       <x-dialog v-model="show" class="dialog-demo" :dialog-style="{'max-width': '100%', width: '80%'}">
-
-        <x-textarea title="" :max="500" placeholder="任务汇报，如有分数变动需求请在此提出" :show-counter="false" :height="200" :rows="8"
+        <div v-if="allmarks-taskdetail.mark!=0" style="color:red">分数存在变动：{{allmarks-taskdetail.mark}}分</div>
+        <x-textarea title="" :max="500" placeholder="检查汇报，如有分数调整请说明" :show-counter="false" :height="200" :rows="8"
                     :cols="50" v-model="comment"></x-textarea>
         <x-button plain type="primary" @click.native="complete(taskid)">确认完成</x-button>
         <div @click="show=false">
@@ -55,14 +55,23 @@
           <span class="green">{{taskdetail.cname}}</span>
         </div>
       </cell>
-
+      <cell title='工作汇报' v-if="comments.totalRow>0">
+        <div v-for="argu in comments.list">
+          <span class="green">{{argu.comment}}</span>
+        </div>
+      </cell>
     </group>
-
+    <!--<group title="工作汇报" >-->
+    <!--<div>-->
+    <!--<x-textarea v-model="argu.comment" autosize>-->
+    <!--</x-textarea>-->
+    <!--</div>-->
+    <!--</group>-->
     <br/>
-    <div style="text-align: right">
-      <x-icon type="ios-plus-empty" size="30" @click="chooseadmin"></x-icon>
+    <!--  <div style="text-align: right">
+        <x-icon type="ios-plus-empty" size="30" @click="chooseadmin"></x-icon>
 
-    </div>
+      </div>-->
     <x-table :cell-bordered="false" style="background-color:#fff;">
       <thead>
       <tr>
@@ -70,7 +79,7 @@
         <th>员工姓名</th>
         <th>任务安排</th>
         <th>分值,合计：{{allmarks}}</th>
-        <th v-if="taskdetail.assignee==myjs.userid">操作</th>
+        <th>职位</th>
 
       </tr>
       </thead>
@@ -82,11 +91,10 @@
           <x-input v-model="user.content" placeholder="任务安排情况"></x-input>
         </th>
         <th>
-          <inline-x-number :min="1" button-style="round" v-model="user.mark"></inline-x-number>
+          <inline-x-number :min="-5" button-style="round" v-model="user.mark"></inline-x-number>
         </th>
-        <th v-if="taskdetail.assignee==myjs.userid">
-          <x-button mini type="warn" @click.native="deluser(index)" v-if="!user.isboss">删除</x-button>
-        </th>
+        <th v-if="user.isboss">队长</th>
+
       </tr>
       </tbody>
     </x-table>
@@ -94,14 +102,12 @@
     <br/>
     <flexbox v-if="taskdetail.assignee==myjs.userid">
 
-      <flexbox-item v-if="flag">
-        <x-button type="warn" @click.native="submit">重新调整人员</x-button>
+
+      <flexbox-item>
+        <x-button type="warn" @click.native="showtask(0,taskid)">任务失败</x-button>
       </flexbox-item>
-      <flexbox-item v-if="flag">
-        <x-button type="primary" @click.native="showtask">任务完成</x-button>
-      </flexbox-item>
-      <flexbox-item v-else>
-        <x-button type="primary" @click.native="submit">人员确认</x-button>
+      <flexbox-item>
+        <x-button type="primary" @click.native="showtask(1,taskid)">确认分数并完成</x-button>
       </flexbox-item>
 
     </flexbox>
@@ -145,7 +151,7 @@
     },
     data() {
       return {
-        title: '任务部署',
+        title: '任务检查',
         myjs: '',
         comment: '',
         user: {name: '', userid: '', mark: 1, content: '', isboss: false},
@@ -154,7 +160,9 @@
         taskdetail: '',
         flag: false,
         show: false,
-        comment: ''
+        comments: '',
+        stat: -1,
+        ctaskid: ''
       }
     },
     created() {
@@ -170,12 +178,29 @@
       }
     },
     methods: {
+      showtask(stat, id) {
+
+        this.stat = stat
+        this.ctaskid = id
+//        if(stat==1&&) {}
+        this.show = true
+
+      },
+      getcomment() {
+        this.$http.post(localStorage.getItem("url") + "/argu/showcomment", {
+          taskid: this.taskid, pagesize: 30,
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.comments = R.body
+          })
+      },
       deluser(index) {
         this.usersinfo.splice(index, 1)
       },
-      showtask() {
-        this.show = true
-      },
+//      showtask() {
+//        this.show = true
+//      },
       getdetail() {
 
         this.$http.post(localStorage.getItem("url") + "/task/gettaskdetailbytaskid", {
@@ -185,25 +210,24 @@
             this.taskdetail = R.body
           })
 
-      },
-      complete(taskid) {
+      }, complete(taskid) {
         var that = this
         var res
         if (that.comment == "") {
           that.toast("请填写内容")
           return false
         }
-        that.$http.post(localStorage.getItem("url") + "/task/completetask", {
-          taskid: taskid, comment: that.comment,
-          credentials: true
+        that.$http.post(localStorage.getItem("url") + "/task/checktask", {
+          taskid: taskid, checkcomment: that.comment, stat: that.stat,
+          marks: JSON.stringify(that.usersinfo)
         }, {emulateJSON: true}).then(
           function (R) {
             res = R.body
             if (res.stat == 0) {
               that.toast("恭喜完成任务")
               that.show = false
+//              this.getalltasksundo()
               window.history.go(-1)
-//              that.getalltasksundo()
             } else {
               that.toast(res.codemsg)
             }
@@ -263,7 +287,7 @@
 
         var that = this;
         if (that.allmarks != that.taskdetail.mark) {
-          that.toast("分数分配异常，请确认")
+          that.toast("请进行分数分配不正确，请确认")
           return false;
         }
         that.$http.post(localStorage.getItem("url") + "/sectask/addsectask", {
@@ -377,6 +401,7 @@
                         document.cookie = "access_token=" + R.bodyText + "; " + 160;
                         that.userinfo()
                         that.getdetail()
+                        that.getcomment()
 
                       })
                   },

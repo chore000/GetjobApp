@@ -32,7 +32,9 @@
             <span style="color: green">{{task.deadline}}</span>
           </div>
         </cell>
-        <cell title="查看详情" :link="'tododetail/'+task.id" ></cell>
+        <cell title="查看详情" :link="'tododetail/'+task.id" >
+          <span slot="title" style="color:blue">查看详情</span>
+        </cell>
       </group>
     </div>
 

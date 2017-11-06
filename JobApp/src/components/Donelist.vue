@@ -1,6 +1,6 @@
 <template>
 
-  <div>
+  <div >
 
     <divider>{{title}}</divider>
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
@@ -39,17 +39,21 @@
             <span style="color: red" v-else-if="task.stat==11">任务检查失败</span>
           </div>
         </cell>
-        <flexbox>
+        <cell  :link="'taskdetail/'+task.id">
+          <span slot="title" style="color:blue">查看详情</span>
+        </cell>
 
-          <flexbox-item>
-            <router-link :to="'taskdetail/'+task.id">
-              <x-button  type="primary" >查看详情</x-button>
-            </router-link>
-          </flexbox-item>
-          <flexbox-item>
-            <x-button  type="warn" @click.native="giveup(task.id)">未完成（待开发）</x-button>
-          </flexbox-item>
-        </flexbox>
+        <!--<flexbox>-->
+
+          <!--<flexbox-item>-->
+            <!--<router-link :to="'taskdetail/'+task.id">-->
+              <!--<x-button  type="primary" >查看详情</x-button>-->
+            <!--</router-link>-->
+          <!--</flexbox-item>-->
+          <!--<flexbox-item>-->
+            <!--<x-button  type="warn" @click.native="giveup(task.id)">未完成（待开发）</x-button>-->
+          <!--</flexbox-item>-->
+        <!--</flexbox>-->
       </group>
       <!--<x-button type="primary">完成任务</x-button><x-button type="default">放弃任务</x-button>-->
 

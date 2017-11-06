@@ -49,16 +49,21 @@
             <span style="color: green">{{task.creattime}}</span>
           </div>
         </cell>
-        <flexbox>
+        <cell title="任务详情" :link="'/checktaskdetail/'+task.id">
+          <span slot="title" style="color:blue">查看详情</span>
+        </cell>
+       <!-- <flexbox>
           <flexbox-item>
             <x-button type="warn" @click.native="showtask(0,task.id)">任务未完成</x-button>
           </flexbox-item>
           <flexbox-item>
-            <x-button type="primary" @click.native="showtask(1,task.id)">任务完成</x-button>
+            &lt;!&ndash;<x-button type="primary" @click.native="showtask(1,task.id)">任务详情</x-button>&ndash;&gt;
+           <router-link :to="'/checktaskdetail/'+task.id">  <x-button type="primary" >任务详情</x-button></router-link>
+
 
           </flexbox-item>
 
-        </flexbox>
+        </flexbox>-->
 
       </group>
 
@@ -170,7 +175,8 @@
             if (res.stat == 0) {
               that.toast("恭喜完成任务")
               that.show = false
-              that.getalltasksundo()
+              this.getalltasksundo()
+//              window.history.go(-1)
             } else {
               that.toast(res.codemsg)
             }

@@ -6,7 +6,7 @@
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
 
     <group>
-      <popup-radio title="区域选择" :options="arealist" v-model="yourarea" @on-change="choosearea"></popup-radio>
+      <popup-radio title="查看所有任务（默认加载的是可以抢的任务）" :options="arealist" v-model="yourarea" @on-change="choosearea"></popup-radio>
     </group>
     <div v-for="(task,index) in alltasks.list">
       <group>
@@ -30,15 +30,17 @@
             <span style="color: green">{{task.mark}}</span>
           </div>
         </cell>
-        <cell title="任务时间节点">
+        <cell title="时间节点">
           <div>
             <span style="color: green">{{task.deadline}}</span>
           </div>
         </cell>
-        <group>
-          <popup-radio  title="任务区域" :options="arealist" readonly v-model="task.area"></popup-radio>
-        </group>
-        <checklist disabled title="职业要求" required :options="commonList" v-model="task.type"
+        <cell title="任务区域">
+          <popup-radio title="" :options="arealist" readonly v-model="task.area"></popup-radio>
+        </cell>
+        <cell title="职业要求">
+        </cell>
+        <checklist disabled title="" :options="commonList" v-model="task.type"
         ></checklist>
 
         <x-button type="primary" @click.native="getjob(task.id)">抢任务</x-button>
@@ -78,7 +80,7 @@
     },
     methods: {
       choosearea() {
-        this.getalltasks()
+        this.getalltasksall()
       },
       gettaskarea() {
         this.$http.post(localStorage.getItem("url") + "/tasktype/gettaskArea", {
@@ -157,11 +159,27 @@
 
 
       },
-      getalltasks() {
+      getalltasksall() {
         this.$http.post(localStorage.getItem("url") + "/task/picktasks", {
           assigneeid: this.myjs.userid, area: this.yourarea,
           pagenum: '1',
           pagesize: '10'
+        }, {emulateJSON: true}).then(
+          function (R) {
+//           var tasks = R.body
+            var res = R.body
+            res.list.forEach((task) => {
+              var type = eval("(" + task.type + ")")
+              task.type = type
+            })
+            this.alltasks = res
+          })
+      },
+      getalltasks() {
+        this.$http.post(localStorage.getItem("url") + "/task/picktasksmy", {
+          assigneeid: this.myjs.userid, area: this.yourarea,
+          pagenum: '1',
+          pagesize: '15'
         }, {emulateJSON: true}).then(
           function (R) {
 //           var tasks = R.body

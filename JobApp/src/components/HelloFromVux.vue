@@ -3,9 +3,10 @@
 
 
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
-    <blur :blur-amount=40 :url=myjs.avatar>
-      <p class="center"><img :src=myjs.avatar></p>
+    <blur :blur-amount=40 :url=url :height="120">
+      <p class="center"><img :src=url></p>
     </blur>
+
     <div>
       <group-title>我的事项</group-title>
       <grid :cols="5">
@@ -44,24 +45,69 @@
       </grid>
     </div>
 
-    <br>
+
     <divider>工作情况</divider>
 
-    <group>
-      <card :header="{title:'动态'}" :footer="{title:'查看更多',link:'/dynamic'}">
-        <marquee slot="content" class="card-padding">
-          <marquee-item v-for="i in tasklog.list" :key="i.id">
-            <router-link :to="'taskdetail/'+i.taskid">
-              {{i.name}}({{i.jobnum}}){{i.meaning}}【{{i.jobname}}】 @{{i.createtime}}
-            </router-link>
-          </marquee-item>
-        </marquee>
-      </card>
-    </group>
+    <flexbox>
+      <flexbox-item>
+
+        <group>
+          <card :header="{title:'今天排名'}" :footer="{title:'查看更多',link:'/marklist'}">
+            <x-table :cell-bordered="false"  slot="content">
+              <thead>
+              <tr>
+                <th></th>
+                <th>姓名</th>
+                <th>完成数量</th>
+                <th>分数</th>
+                <th></th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-for="(img,index) in marks" @click="updateurl(img.avatar)">
+                <td>{{index + 1}}</td>
+                <td>{{img.name}}</td>
+                <td>{{img.num}}</td>
+                <td>{{img.mark}}</td>
+                <td>
+                  <p class="smallcenter"><img :src=img.avatar></p>
+                </td>
+              </tr>
+              </tbody>
+            </x-table>
+          </card>
+        </group>
+
+      </flexbox-item>
+      <flexbox-item>
+        <group>
+          <card :header="{title:'动态'}" :footer="{title:'查看更多',link:'/dynamic'}">
+            <marquee slot="content" class="card-padding">
+              <marquee-item v-for="i in tasklog.list" :key="i.id">
+                <router-link :to="'taskdetail/'+i.taskid">
+                  <p style="padding: 15px"> {{i.name}}({{i.jobnum}}){{i.meaning}}【{{i.jobname}}】 @{{i.createtime}}</p>
+                </router-link>
+              </marquee-item>
+            </marquee>
+          </card>
+        </group>
+
+      </flexbox-item>
+
+    </flexbox>
+
+
+    <!--<flexbox :gutter="0"  orient="vertical">-->
+    <!--<flexbox-item></flexbox-item>-->
+    <!--<flexbox-item v-for="(img, index) in marks" :key="index" ><img :src="img.avatar" style="width:50%"  @click="updateurl(img.avatar)"/></flexbox-item>-->
+    <!--<flexbox-item></flexbox-item>-->
+    <!--</flexbox>-->
+
+
     <br>
     <card>
       <!--<img slot="header" :src="mysrc" style="width:100%;display:block;">-->
-      <div slot="content" class="card-padding">
+      <div slot="content">
         <p style="color:#999;font-size:12px;" class="align-right">Posted on October 31, 2017</p>
         <p style="color:#999;font-size:12px;" class="align-right">
           BY Intelligent Industrial Technology Center
@@ -84,13 +130,30 @@
   var nonceStr = "";
   var timeStamp = "";
   var agentId = "";
-  import {Group, Divider, Card, Marquee, MarqueeItem, XImg, Cell, Blur, Badge, Grid, GridItem, GroupTitle} from 'vux'
+  import {
+    Flexbox, FlexboxItem,
+    Group,
+    Divider,
+    Card,
+    Marquee,
+    MarqueeItem,
+    XImg,
+    Cell,
+    Blur,
+    Badge,
+    Grid,
+    GridItem,
+    GroupTitle,
+    XTable
+
+  } from 'vux'
 
   export default {
     components: {
+      Flexbox, FlexboxItem,
       Card,
       Divider,
-
+      XTable,
       Group,
 
       XImg, Marquee, MarqueeItem, Cell, Blur, Badge, Grid, GridItem, GroupTitle
@@ -102,7 +165,9 @@
         name: this.getCookie("user"),
         myjs: this.getCookiejson("user"),
         tasklog: [],
-        datav: ''
+        datav: '',
+        url: this.getCookiejson("user").avatar,
+        marks: []
       }
     },
     created() {
@@ -120,6 +185,10 @@
               this.myjs = R.body
           })
 
+      },
+      success() {
+      },
+      error() {
       },
       callperson() {
         DingTalkPC.biz.util.open({
@@ -146,6 +215,16 @@
             this.tasklog = R.body
           })
 
+      },
+      gettop3() {
+        this.$http.post(localStorage.getItem("url") + "/task/marklisttodaytop3", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+
+            this.marks = R.body
+          })
       },
       getdatav() {
         this.$http.post(localStorage.getItem("url") + "/task/indexdatav", {
@@ -207,7 +286,10 @@
         }
         return ""
       },
-
+      updateurl(url) {
+//        this.toast(url)
+        this.url = url
+      },
       fetchdata() {
         localStorage.setItem("url", "http://10.3.12.75:9001")
 //        localStorage.setItem("url", "http://222.134.52.36:8000")
@@ -260,6 +342,7 @@
                         that.userinfo()
                         that.gettasklog()
                         that.getdatav()
+                        that.gettop3()
                       })
                   },
                   onFail: function (err) {
@@ -291,7 +374,7 @@
   }
 
   .card-padding {
-    padding: 0 50px 165px 50px;
+    padding: 0 0px 170px 0px;
   }
 
   .card-demo-flex > div {
@@ -310,21 +393,42 @@
 
   .center {
     text-align: center;
-    padding-top: 20px;
+    padding-top: 0px;
     color: #fff;
     font-size: 18px;
   }
 
   .center img {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
+    width: 110px;
+    height: 110px;
+    border-radius: 80%;
     border: 4px solid #ececec;
+  }
+
+  .smallcenter img {
+    width: 40px;
+    height: 40px;
+    border-radius: 100%;
+    border: 4px solid #ece678;
   }
 
   .grid-center {
     display: block;
     text-align: center;
     color: #666;
+  }
+
+  .ximg-demo {
+    width: 100%;
+    height: auto;
+  }
+
+  .ximg-error {
+    background-color: yellow;
+  }
+
+  .ximg-error:after {
+    content: '加载失败';
+    color: red;
   }
 </style>

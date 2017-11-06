@@ -2,17 +2,58 @@
 
   <div class="timeline-demo">
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
-    <button-tab >
+
+
+    <button-tab>
       <button-tab-item @on-item-click="consoleIndex(1)" selected>任务评论</button-tab-item>
       <button-tab-item @on-item-click="consoleIndex(2)">任务事件</button-tab-item>
     </button-tab>
+
+    <group title="任务得分">
+      <x-table :cell-bordered="false" style="background-color:#fff;">
+        <thead>
+        <tr>
+          <th>编号</th>
+          <th>员工姓名</th>
+          <th>任务安排</th>
+          <th>分值,合计：{{allmarks}}</th>
+          <th>实际获得</th>
+          <th>职位</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="(user,index) in usersinfo">
+          <th>{{index + 1}}</th>
+          <th>{{user.name}}</th>
+          <th>
+            {{user.content}}
+          </th>
+          <th>
+            {{user.mark}}
+          </th>
+          <th>
+            {{user.realmark}}
+          </th>
+          <th v-if="user.isboss">队长</th>
+
+        </tr>
+        </tbody>
+      </x-table>
+    </group>
     <group title="工作汇报" v-if="comments.totalRow>0">
       <div v-for="argu in comments.list">
         <x-textarea v-model="argu.comment" autosize>
         </x-textarea>
       </div>
     </group>
+    <group title="检查结果" v-if="checkcomments.totalRow>0">
+      <div v-for="argu in checkcomments.list">
 
+        <x-textarea v-model="argu.comment" autosize>
+        </x-textarea>
+        <p style="text-align: right">检查人：{{argu.name}}</p>
+      </div>
+    </group>
     <timeline>
 
       <timeline-item v-for="(i, index) in taskassign.list" :key="index">
@@ -20,13 +61,29 @@
         <p :class="[i === 0 ? 'recent' : '']"> {{i.createtime}}</p>
       </timeline-item>
     </timeline>
+    <group title="员工评论">
+      <div  style="padding:0 15px;">
+        <x-table :cell-bordered="false" style="background-color:#fff;">
+          <thead>
+          <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr v-for="(argu,index) in taskargu.list" >
+            <td style="text-align:left">{{index+1}}#</td>
+            <td style="text-align:left"> {{argu.comment}}</td>
+            <td><p style="text-align: right">{{argu.jobnum}}{{argu.name}} {{argu.createtime}}</p></td>
 
-    <div v-for="argu in taskargu.list">
-      <h5>{{argu.jobnum}}{{argu.name}}
-        {{argu.comment}}
-        {{argu.createtime}}
-      </h5>
-    </div>
+          </tr>
+          </tbody>
+        </x-table>
+      </div>
+
+    </group>
+
     <group>
 
       <x-textarea :max="200" :placeholder="'任务评价'" v-model="comment"></x-textarea>
@@ -39,41 +96,74 @@
 </template>
 
 <script>
-  import {Timeline, TimelineItem, XButton, Divider, XTextarea, Group, ButtonTab, ButtonTabItem} from 'vux'
+  import {
+    Timeline,
+    TimelineItem,
+    XButton,
+    Divider,
+    XTextarea,
+    Group,
+    ButtonTab,
+    ButtonTabItem,
+    XTable,
+    XInput
+  } from 'vux'
 
   export default {
     components: {
       Timeline,
       TimelineItem,
-      XButton, Divider, XTextarea, Group, ButtonTab, ButtonTabItem
+      XButton, Divider, XTextarea, Group, ButtonTab, ButtonTabItem, XTable, XInput
     },
     data() {
       return {
         count: 3,
         taskid: this.$route.params.id,
         myjs: '',
-        comments:[],
+        comments: [],
         taskargu: [],
         taskassign: [],
-        comment: ''
+        comment: '',
+        usersinfo: [],
+        checkcomments: ''
       }
     },
     created() {
       this.fetchdata()
 
     },
+    computed: {
+      allmarks: function () {
+        var sum = 0
+        this.usersinfo.forEach((user) => sum += user.mark
+        )
+        return sum
+      }
+    },
     methods: {
       consoleIndex(value) {
-        if(value==2){
-          this.taskargu=[]
+        if (value == 2) {
+          this.taskargu = []
           this.gettaskassign()
 
-        }else {
-          this.taskassign=[]
+        } else {
+          this.taskassign = []
           this.getargu()
         }
       },
+      getmarks() {
+        var that = this;
+        that.$http.post(localStorage.getItem("url") + "/sectask/getmarksdiv", {
+          taskid: that.taskid
+        }, {emulateJSON: true}).then(
+          function (R) {
 
+            that.flag = true;
+            that.usersinfo = R.body
+
+          })
+
+      },
       userinfo() {
         this.$http.post(localStorage.getItem("url") + "/userinfo", {
           access_token: this.getCookie("access_token")
@@ -135,6 +225,15 @@
             this.comments = R.body
           })
       },
+      getcheckcomment() {
+        this.$http.post(localStorage.getItem("url") + "/argu/showcheckcomment", {
+          taskid: this.taskid, pagesize: 30,
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.checkcomments = R.body
+          })
+      },
       gettaskassign() {
         this.$http.post(localStorage.getItem("url") + "/assignlog/show", {
           taskid: this.taskid,
@@ -175,7 +274,7 @@
             timeStamp = result.timeStamp;
             agentId = result.agentid;
             corpId = result.corpId;
-        //    console.log(corpId)
+            //    console.log(corpId)
             DingTalkPC.config({
               agentId: agentId,
               corpId: corpId,
@@ -193,14 +292,14 @@
             });
 
             DingTalkPC.ready(function () {
-        //        console.log('DingTalkPC.ready rocks!')
+                //        console.log('DingTalkPC.ready rocks!')
 
 
                 //校验成功后，使用获取免登授权码接口获取CODE
                 DingTalkPC.runtime.permission.requestAuthCode({
                   corpId: corpId, //企业id
                   onSuccess: function (info) {
-             //       console.log('authcode' + info.code);
+                    //       console.log('authcode' + info.code);
                     that.$http.post(localStorage.getItem("url") + "/login", {
                       code: info.code,
                       corpid: corpId,
@@ -212,17 +311,19 @@
                         that.userinfo()
 //                        that.gettaskassign()
                         that.getcomment()
-                        this.consoleIndex(1)
+                        that.getcheckcomment()
+                        that.getmarks()
+                        that.consoleIndex(1)
                       })
                   },
                   onFail: function (err) {
-          //          console.log('requestAuthCode fail: ' + JSON.stringify(err));
+                    //          console.log('requestAuthCode fail: ' + JSON.stringify(err));
                   }
                 });
               }
             );
             DingTalkPC.error(function (err) {
-         //     console.log('dd error: ' + JSON.stringify(err));
+              //     console.log('dd error: ' + JSON.stringify(err));
             });
           }, function (res) {
             // 处理失败的结果
