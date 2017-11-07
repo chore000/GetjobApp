@@ -49,7 +49,7 @@
     <divider>工作情况</divider>
 
     <flexbox>
-      <flexbox-item>
+      <flexbox-item  v-if="marks.length>0">
 
         <group>
           <card :header="{title:'今天排名'}" :footer="{title:'查看更多',link:'/marklist'}">
@@ -79,7 +79,7 @@
         </group>
 
       </flexbox-item>
-      <flexbox-item>
+      <flexbox-item v-if="tasklog.list.length>0">
         <group>
           <card :header="{title:'动态'}" :footer="{title:'查看更多',link:'/dynamic'}">
             <marquee slot="content" class="card-padding">
@@ -291,8 +291,8 @@
         this.url = url
       },
       fetchdata() {
-        localStorage.setItem("url", "http://10.3.12.75:9001")
-//        localStorage.setItem("url", "http://222.134.52.36:8000")
+//        localStorage.setItem("url", "http://10.3.12.75:9001")
+        localStorage.setItem("url", "http://222.134.52.36:8000")
         var that = this;
 
         that.$http.get(localStorage.getItem("url") + "/getconfig").then(

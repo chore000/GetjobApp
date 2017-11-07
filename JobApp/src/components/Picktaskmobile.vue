@@ -5,8 +5,10 @@
     <divider>{{title}}</divider>
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
 
+    <group>
+      <popup-radio title="查看所有任务（默认加载的是可以抢的任务）" :options="arealist" v-model="yourarea" @on-change="choosearea"></popup-radio>
+    </group>
     <div v-for="(task,index) in alltasks.list">
-      <!--<card :header="{title:'商品详情'}" :footer="{title:'查看更多'}">-->
       <group>
         <cell title='任务等级'>
           <div>
@@ -28,22 +30,22 @@
             <span style="color: green">{{task.mark}}</span>
           </div>
         </cell>
-        <cell title="任务时间节点">
+        <cell title="时间节点">
           <div>
             <span style="color: green">{{task.deadline}}</span>
           </div>
         </cell>
-        <checklist disabled title="职业要求" required :options="commonList" v-model="task.type"
+        <cell title="任务区域">
+          <popup-radio title="" :options="arealist" readonly v-model="task.area"></popup-radio>
+        </cell>
+        <cell title="职业要求">
+        </cell>
+        <checklist disabled title="" :options="commonList" v-model="task.type"
         ></checklist>
-        <flexbox>
-          <flexbox-item>
-            <x-button plain type="primary" class="custom-primary-red" @click.native="getjob(task.id)">抢任务</x-button>
-            <!--<x-button type="primary"></x-button>-->
-          </flexbox-item>
-        </flexbox>
-      </group>
-      <!--<x-button type="primary">完成任务</x-button><x-button type="default">放弃任务</x-button>-->
 
+        <x-button type="primary" @click.native="getjob(task.id)">抢任务</x-button>
+
+      </group>
     </div>
 
 
@@ -51,17 +53,14 @@
 </template>
 
 <script>
-  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Checklist, Confirm, ConfirmPlugin} from 'vux'
-  import Group from "../../node_modules/vux/src/components/group/index.vue";
+  import {Divider, XButton, Cell, Checklist, Group, PopupRadio} from 'vux'
 
   export default {
     components: {
       Group,
       Divider,
-      TimelineItem,
       XButton,
-      Flexbox, FlexboxItem,
-      Cell, Checklist, Confirm, ConfirmPlugin
+      Cell, Checklist, PopupRadio
     },
     data() {
       return {
@@ -71,15 +70,26 @@
         myjs: '',
         alltasks: [],
         tasktypelist: [],
-        commonList: []
+        commonList: [],
+        arealist: [],
+        yourarea: ''
       }
     },
     created() {
       this.fetchdata()
     },
     methods: {
-
-      dingconfirm(msg) {
+      choosearea() {
+        this.getalltasksall()
+      },
+      gettaskarea() {
+        this.$http.post(localStorage.getItem("url") + "/tasktype/gettaskArea", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.arealist = R.body
+          })
 
       },
       gettasktype() {
@@ -111,7 +121,6 @@
           duration: 3, //显示持续时间，单位秒，最短2秒，最长5秒
           delay: 0, //延迟显示，单位秒，默认0, 最大限制为10
           onSuccess: function (result) {
-            /*{}*/
           },
           onFail: function (err) {
           }
@@ -142,12 +151,7 @@
                   this.getalltasks()
                 })
             }
-            //onSuccess将在点击button之后回调
-            /*
-            {
-                buttonIndex: 0 //被点击按钮的索引值，Number类型，从0开始
-            }
-            */
+
           },
           onFail: function (err) {
           }
@@ -155,11 +159,27 @@
 
 
       },
-      getalltasks() {
+      getalltasksall() {
         this.$http.post(localStorage.getItem("url") + "/task/picktasks", {
-          assigneeid: this.myjs.userid,
+          assigneeid: this.myjs.userid, area: this.yourarea,
           pagenum: '1',
           pagesize: '10'
+        }, {emulateJSON: true}).then(
+          function (R) {
+//           var tasks = R.body
+            var res = R.body
+            res.list.forEach((task) => {
+              var type = eval("(" + task.type + ")")
+              task.type = type
+            })
+            this.alltasks = res
+          })
+      },
+      getalltasks() {
+        this.$http.post(localStorage.getItem("url") + "/task/picktasksmy", {
+          assigneeid: this.myjs.userid, area: this.yourarea,
+          pagenum: '1',
+          pagesize: '15'
         }, {emulateJSON: true}).then(
           function (R) {
 //           var tasks = R.body
@@ -203,7 +223,7 @@
             corpId = result.corpId;
             //     console.log(corpId)
             dd.config({
-              agentId:agentId,
+              agentId: agentId,
               corpId: corpId,
               timeStamp: timeStamp,
               nonceStr: nonceStr,
@@ -236,7 +256,9 @@
 //                        that.myinfo = JSON.stringify(R)
                         document.cookie = "access_token=" + R.bodyText + "; " + 160;
                         that.userinfo()
-                        this.gettasktype()
+                        that.gettasktype()
+                        that.gettaskarea()
+
                       })
                   },
                   onFail: function (err) {

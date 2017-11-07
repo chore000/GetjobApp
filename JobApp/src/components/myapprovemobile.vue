@@ -38,6 +38,11 @@
             <span style="color: green">{{task.taskapply.reqtime}}</span>
           </div>
         </cell>
+        <cell title="发布时间">
+          <div>
+            <span style="color: green">{{task.taskapply.publishtime}}</span>
+          </div>
+        </cell>
         <cell title="任务添加人">
           <div>
             <span style="color: green">{{task.sendusername}}</span>
@@ -108,7 +113,7 @@
           access_token: this.getCookie("access_token"), applyid: value
         }, {emulateJSON: true}).then(
           function (R) {
-            if(R){
+            if(R.bodyText=="true"){
               this.toast("操作成功")
             }else{
               this.toast("出现异常，请点击异常反馈")
@@ -123,7 +128,7 @@
           access_token: this.getCookie("access_token"), applyid: value
         }, {emulateJSON: true}).then(
           function (R) {
-            if(R){
+            if(R.bodyText=="true"){
               this.toast("操作成功")
             }else{
               this.toast("出现异常，请点击异常反馈")
@@ -176,7 +181,7 @@
             })
             this.alltasks = res
 
-       //     console.log(JSON.stringify(R.body))
+            //     console.log(JSON.stringify(R.body))
           })
       },
       getCookie(c_name) {
@@ -209,7 +214,7 @@
             timeStamp = result.timeStamp;
             agentId = result.agentid;
             corpId = result.corpId;
-          //  console.log(corpId)
+            //  console.log(corpId)
             dd.config({
               agentId: agentId,
               corpId: corpId,
@@ -227,14 +232,14 @@
             });
 
             dd.ready(function () {
-           //     console.log('dd.ready rocks!')
+                //     console.log('dd.ready rocks!')
 
 
                 //校验成功后，使用获取免登授权码接口获取CODE
                 dd.runtime.permission.requestAuthCode({
                   corpId: corpId, //企业id
                   onSuccess: function (info) {
-           //         console.log('authcode' + info.code);
+                    //         console.log('authcode' + info.code);
                     that.$http.post(localStorage.getItem("url") + "/login", {
                       code: info.code,
                       corpid: corpId,
@@ -248,13 +253,13 @@
                       })
                   },
                   onFail: function (err) {
-               //     console.log('requestAuthCode fail: ' + JSON.stringify(err));
+                    //     console.log('requestAuthCode fail: ' + JSON.stringify(err));
                   }
                 });
               }
             );
             dd.error(function (err) {
-        //     console.log('dd error: ' + JSON.stringify(err));
+              //     console.log('dd error: ' + JSON.stringify(err));
             });
           }, function (res) {
             // 处理失败的结果

@@ -100,7 +100,7 @@
     </x-table>
     <br/>
     <br/>
-    <flexbox >
+    <flexbox>
 
 
       <flexbox-item>
@@ -261,7 +261,7 @@
         var that = this
         //    console.log("chooseadmin")
 
-        DingTalkPC.biz.contact.choose({
+        dd.biz.contact.choose({
           multiple: true, //是否多选： true多选 false单选； 默认true
           users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
           corpId: corpId, //企业id
@@ -304,7 +304,7 @@
           })
       },
       toast(msg) {
-        DingTalkPC.device.notification.toast({
+        dd.device.notification.toast({
           type: "information", //toast的类型 alert, success, error, warning, information, confirm
           text: msg, //提示信息
           duration: 3, //显示持续时间，单位秒，最短2秒，最长5秒
@@ -366,7 +366,7 @@
             agentId = result.agentid;
             corpId = result.corpId;
             //       console.log(corpId)
-            DingTalkPC.config({
+            dd.config({
               agentId: agentId,
               corpId: corpId,
               timeStamp: timeStamp,
@@ -382,12 +382,12 @@
                 'biz.util.openLink'] //必填，需要使用的jsapi列表
             });
 
-            DingTalkPC.ready(function () {
-//                console.log('DingTalkPC.ready rocks!')
+            dd.ready(function () {
+//                console.log('dd.ready rocks!')
 
 
                 //校验成功后，使用获取免登授权码接口获取CODE
-                DingTalkPC.runtime.permission.requestAuthCode({
+                dd.runtime.permission.requestAuthCode({
                   corpId: corpId, //企业id
                   onSuccess: function (info) {
                     //           console.log('authcode' + info.code);
@@ -411,7 +411,7 @@
                 });
               }
             );
-            DingTalkPC.error(function (err) {
+            dd.error(function (err) {
               //           console.log('dd error: ' + JSON.stringify(err));
             });
           }, function (res) {

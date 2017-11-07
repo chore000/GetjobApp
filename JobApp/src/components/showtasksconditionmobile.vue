@@ -7,11 +7,11 @@
 
     <div v-for="(task,index) in alltasks.list">
       <group>
-   <!--     <cell title='编号'>
-          <div>
-            <span style="color: green">{{index + 1}}</span>
-          </div>
-        </cell>-->
+        <!--     <cell title='编号'>
+               <div>
+                 <span style="color: green">{{index + 1}}</span>
+               </div>
+             </cell>-->
         <cell title='工作项目'>
           <div>
             <span style="color: green">{{task.jobname}}</span>
@@ -29,7 +29,8 @@
         </cell>
         <cell title='是否超时'>
           <div>
-            <span style="color: red" v-if="task.completetime>task.deadline">超时完成</span>
+            <span style="color: red" v-if="task.stat==-3">未生效</span>
+            <span style="color: red" v-else-if="task.completetime>task.deadline">超时完成</span>
             <span style="color: red" v-else-if="task.completetime==null">未完成</span>
             <span style="color: green" v-else-if="task.completetime<=task.deadline">按时完成</span>
           </div>

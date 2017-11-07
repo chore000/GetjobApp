@@ -1,6 +1,6 @@
 <template>
 
-  <div>
+  <div >
 
     <divider>{{title}}</divider>
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
@@ -32,17 +32,28 @@
             <span style="color: green">{{task.creattime}}</span>
           </div>
         </cell>
-        <flexbox>
+        <cell title="任务状态">
+          <div>
+            <span style="color: #ffc7f7" v-if="task.stat==9">待检查</span>
+            <span style="color: green" v-else-if="task.stat==10">任务检查成功</span>
+            <span style="color: red" v-else-if="task.stat==11">任务检查失败</span>
+          </div>
+        </cell>
+        <cell  :link="'mobiletaskdetail/'+task.id">
+          <span slot="title" style="color:blue">查看详情</span>
+        </cell>
 
-          <flexbox-item>
-            <router-link :to="'mobiletaskdetail/'+task.id">
-              <x-button  type="primary" >查看详情</x-button>
-            </router-link>
-          </flexbox-item>
-          <flexbox-item>
-            <x-button  type="warn"  @click.native="giveup(task.id)">未完成(待开发)</x-button>
-          </flexbox-item>
-        </flexbox>
+        <!--<flexbox>-->
+
+        <!--<flexbox-item>-->
+        <!--<router-link :to="'taskdetail/'+task.id">-->
+        <!--<x-button  type="primary" >查看详情</x-button>-->
+        <!--</router-link>-->
+        <!--</flexbox-item>-->
+        <!--<flexbox-item>-->
+        <!--<x-button  type="warn" @click.native="giveup(task.id)">未完成（待开发）</x-button>-->
+        <!--</flexbox-item>-->
+        <!--</flexbox>-->
       </group>
       <!--<x-button type="primary">完成任务</x-button><x-button type="default">放弃任务</x-button>-->
 
@@ -113,7 +124,7 @@
         }, {emulateJSON: true}).then(
           function (R) {
             this.alltasks = R.body
-       //     console.log(JSON.stringify(R.body))
+            //     console.log(JSON.stringify(R.body))
           })
       },
       getCookie(c_name) {
@@ -146,7 +157,7 @@
             timeStamp = result.timeStamp;
             agentId = result.agentid;
             corpId = result.corpId;
-         //   console.log(corpId)
+            //   console.log(corpId)
             dd.config({
               agentId: agentId,
               corpId: corpId,
@@ -164,14 +175,14 @@
             });
 
             dd.ready(function () {
-             //   console.log('dd.ready rocks!')
+                //   console.log('dd.ready rocks!')
 
 
                 //校验成功后，使用获取免登授权码接口获取CODE
                 dd.runtime.permission.requestAuthCode({
                   corpId: corpId, //企业id
                   onSuccess: function (info) {
-                //    console.log('authcode' + info.code);
+                    //    console.log('authcode' + info.code);
                     that.$http.post(localStorage.getItem("url") + "/login", {
                       code: info.code,
                       corpid: corpId,
@@ -184,13 +195,13 @@
                       })
                   },
                   onFail: function (err) {
-            //        console.log('requestAuthCode fail: ' + JSON.stringify(err));
+                    //        console.log('requestAuthCode fail: ' + JSON.stringify(err));
                   }
                 });
               }
             );
             dd.error(function (err) {
-          //    console.log('dd error: ' + JSON.stringify(err));
+              //    console.log('dd error: ' + JSON.stringify(err));
             });
           }, function (res) {
             // 处理失败的结果

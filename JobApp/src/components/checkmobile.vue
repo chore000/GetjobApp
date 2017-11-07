@@ -9,9 +9,9 @@
 
         <div>
 
-          <x-textarea title="" :max="500" placeholder="任务汇报，如有分数变动需求请在此提出" :show-counter="false" :height="200" :rows="8"
+          <x-textarea title="检查汇报" :max="500" placeholder="" :show-counter="false" :height="200" :rows="8"
                       :cols="50" v-model="comment"></x-textarea>
-          <x-button plain type="primary" @click.native="complete(task.id)">确认完成</x-button>
+          <x-button plain type="primary" @click.native="complete(ctaskid)">确认完成</x-button>
           <div @click="show=false">
             <span class="vux-close"></span>
             <x-icon type="ios-close-outline" style="fill:#fff;"></x-icon>
@@ -49,18 +49,21 @@
             <span style="color: green">{{task.creattime}}</span>
           </div>
         </cell>
-        <flexbox>
-          <flexbox-item>
-            <x-button type="warn" @click.native="giveup(task.id)">放弃任务</x-button>
-          </flexbox-item>
-          <flexbox-item>
-            <router-link :to="'mobiletododetail/'+task.id">
-              <x-button type="primary" >任务部署</x-button>
-            </router-link>
+        <cell title="任务详情" :link="'/mobilechecktaskdetail/'+task.id">
+          <span slot="title" style="color:blue">查看详情</span>
+        </cell>
+        <!-- <flexbox>
+           <flexbox-item>
+             <x-button type="warn" @click.native="showtask(0,task.id)">任务未完成</x-button>
+           </flexbox-item>
+           <flexbox-item>
+             &lt;!&ndash;<x-button type="primary" @click.native="showtask(1,task.id)">任务详情</x-button>&ndash;&gt;
+            <router-link :to="'/checktaskdetail/'+task.id">  <x-button type="primary" >任务详情</x-button></router-link>
 
-          </flexbox-item>
 
-        </flexbox>
+           </flexbox-item>
+
+         </flexbox>-->
 
       </group>
 
@@ -98,19 +101,24 @@
       return {
         show: false,
         count: 3,
-        title: '待办事项',
+        title: '检查事项',
         undo: '',
         myjs: '',
         alltasks: [],
-        comment: ''
+        comment: '',
+        stat: -1,
+        ctaskid: ''
       }
     },
     created() {
       this.fetchdata()
     },
     methods: {
-      showtask(taskid) {
+      showtask(stat, id) {
+        this.stat = stat
+        this.ctaskid = id
         this.show = true
+
       },
       giveup(taskid) {
         var that = this
@@ -158,8 +166,8 @@
           that.toast("请填写内容")
           return false
         }
-        that.$http.post(localStorage.getItem("url") + "/task/completetask", {
-          taskid: taskid, comment: that.comment,
+        that.$http.post(localStorage.getItem("url") + "/task/checktask", {
+          taskid: taskid, checkcomment: that.comment, stat: that.stat,
           credentials: true
         }, {emulateJSON: true}).then(
           function (R) {
@@ -167,7 +175,8 @@
             if (res.stat == 0) {
               that.toast("恭喜完成任务")
               that.show = false
-              that.getalltasksundo()
+              this.getalltasksundo()
+//              window.history.go(-1)
             } else {
               that.toast(res.codemsg)
             }
@@ -198,7 +207,7 @@
 
       },
       getalltasksundo() {
-        this.$http.post(localStorage.getItem("url") + "/task/alltaskundo", {
+        this.$http.post(localStorage.getItem("url") + "/task/getchecktask", {
           assigneeid: this.myjs.userid,
           pagenum: '1',
           pagesize: '10'

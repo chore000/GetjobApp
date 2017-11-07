@@ -7,76 +7,35 @@
 
     <div v-for="(task,index) in alltasks.list">
       <group>
-        <!--   <cell title='编号'>
-             <div>
-               <span style="color: green">{{index + 1}}</span>
-             </div>
-           </cell>-->
-
+        <cell title='任务等级'>
+          <div>
+            <span style="color: green">{{task.tasklvl}}</span>
+          </div>
+        </cell>
         <cell title='工作项目'>
           <div>
-            <span>{{task.taskapply.taskname}}</span>
+            <span style="color: green">{{task.jobname}}</span>
           </div>
         </cell>
         <cell title='工作内容'>
           <div>
-            <span>{{task.taskapply.taskcontent}}</span>
+            <span style="color: green">{{task.jobcontent}}</span>
           </div>
         </cell>
         <cell title="分数">
           <div>
-            <span>{{task.taskapply.taskmark}}</span>
+            <span style="color: green">{{task.mark}}</span>
           </div>
         </cell>
-        <cell title="任务数量">
+        <cell title="任务时间节点">
           <div>
-            <span>{{task.taskapply.taskcount}}</span>
+            <span style="color: green">{{task.deadline}}</span>
           </div>
         </cell>
-        <cell title="时间节点">
-          <div>
-            <span>{{task.taskapply.reqtime}}</span>
-          </div>
+        <cell title="查看详情" :link="'mobiletododetail/'+task.id" >
+          <span slot="title" style="color:blue">查看详情</span>
         </cell>
-        <cell title="发布时间">
-          <div>
-            <span>{{task.taskapply.publishtime}}</span>
-          </div>
-        </cell>
-        <cell title="申请状态">
-          <div>
-            <span style="color: yellowgreen" v-if="task.stat==-1">任务发起</span>
-            <span style="color: blue" v-else-if="task.stat==0">任务审批完成</span>
-            <span style="color: red" v-else-if="task.stat==2">任务终止</span>
-            <span style="color: red" v-else-if="task.stat==3">任务被拒</span>
-          </div>
-        </cell>
-        <cell title="任务添加人">
-          <div>
-            <span>{{task.sendusername}}</span>
-          </div>
-        </cell>
-        <cell title='任务等级'>
-          <div>
-            <span>{{task.taskapply.tasklvl}}</span>
-          </div>
-        </cell>
-        <checklist disabled title="职业要求" required :options="commonList" v-model="task.taskapply.tasktypelist"
-        ></checklist>
-        <flexbox>
-          <flexbox-item>
-            <router-link :to="'mobiletaskcondition/'+task.id">
-              <x-button type="primary">完成情况</x-button>
-            </router-link>
-          </flexbox-item>
-
-          <flexbox-item>
-            <x-button type="warn" @click.native="stopapply(task.id)">任务终止(待开发)</x-button>
-          </flexbox-item>
-        </flexbox>
       </group>
-      <!--<x-button type="primary">完成任务</x-button><x-button type="default">放弃任务</x-button>-->
-
     </div>
 
 
@@ -84,44 +43,46 @@
 </template>
 
 <script>
-  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Group, Checklist, CheckerItem} from 'vux'
+  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Checklist, Confirm, ConfirmPlugin} from 'vux'
+  import Group from "../../node_modules/vux/src/components/group/index.vue";
 
   export default {
     components: {
+      Group,
       Divider,
       TimelineItem,
       XButton,
       Flexbox, FlexboxItem,
-      Cell, Group, Checklist, CheckerItem
+      Cell, Checklist, Confirm, ConfirmPlugin
     },
     data() {
       return {
         count: 3,
-        title: '已发任务',
+        title: '我的待办',
         undo: '',
         myjs: '',
-        alltasks: []
+        alltasks: [],
+        tasktypelist: [],
+        commonList: []
       }
     },
     created() {
       this.fetchdata()
     },
     methods: {
-      gettasktype() {
-        this.$http.post(localStorage.getItem("url") + "/tasktype/gettasktype", {
+
+
+      userinfo() {
+        this.$http.post(localStorage.getItem("url") + "/userinfo", {
           access_token: this.getCookie("access_token"),
           credentials: true
         }, {emulateJSON: true}).then(
           function (R) {
-            this.commonList = R.body
+            document.cookie = "user=" + R.bodyText,
+              this.myjs = R.body,
+              this.getalltasks()
           })
 
-      },
-      open(value) {
-//        this.toast(value)
-        var url;
-        url = "taskdetail?index=" + value
-        window.location.href = url;
       },
       toast(msg) {
         dd.device.notification.toast({
@@ -130,51 +91,22 @@
           duration: 3, //显示持续时间，单位秒，最短2秒，最长5秒
           delay: 0, //延迟显示，单位秒，默认0, 最大限制为10
           onSuccess: function (result) {
-            /*{}*/
           },
           onFail: function (err) {
           }
         })
       },
-      userinfo() {
-        this.$http.post(localStorage.getItem("url") + "/userinfo", {access_token: this.getCookie("access_token")}, {emulateJSON: true}).then(
-          function (R) {
-            document.cookie = "user=" + R.bodyText,
-              this.myjs = R.body,
-              this.getalltasksundo()
-          })
 
-      },
-      stopapply(applyid) {
-        this.$http.post(localStorage.getItem("url") + "/taskapply/stopapply", {applyid: applyid}, {emulateJSON: true}).then(
-          function (R) {
-            this.toast(JSON.stringify(R.body))
-          })
-      },
-      showtaskcon(taskid, stat) {
-        if (stat != 0) {
-          this.toast("未审批完成")
-        }
-        else {
-          this.toast("show")
-        }
-      },
-      getalltasksundo() {
-        this.$http.post(localStorage.getItem("url") + "/taskapply/getmyapply", {
+      getalltasks() {
+        this.$http.post(localStorage.getItem("url") + "/task/getreleasetask", {
           assigneeid: this.myjs.userid,
           pagenum: '1',
           pagesize: '10'
         }, {emulateJSON: true}).then(
           function (R) {
-
+//           var tasks = R.body
             var res = R.body
-            res.list.forEach((task) => {
-              var taskdetail = eval("(" + task.taskapply + ")")
-              task.taskapply = taskdetail
-            })
             this.alltasks = res
-
-            //  console.log(JSON.stringify(R.body))
           })
       },
       getCookie(c_name) {
@@ -207,7 +139,7 @@
             timeStamp = result.timeStamp;
             agentId = result.agentid;
             corpId = result.corpId;
-            //  console.log(corpId)
+            //     console.log(corpId)
             dd.config({
               agentId: agentId,
               corpId: corpId,
@@ -225,14 +157,14 @@
             });
 
             dd.ready(function () {
-                //    console.log('dd.ready rocks!')
+                //          console.log('dd.ready rocks!')
 
 
                 //校验成功后，使用获取免登授权码接口获取CODE
                 dd.runtime.permission.requestAuthCode({
                   corpId: corpId, //企业id
                   onSuccess: function (info) {
-                    //       console.log('authcode' + info.code);
+                    //               console.log('authcode' + info.code);
                     that.$http.post(localStorage.getItem("url") + "/login", {
                       code: info.code,
                       corpid: corpId,
@@ -242,17 +174,17 @@
 //                        that.myinfo = JSON.stringify(R)
                         document.cookie = "access_token=" + R.bodyText + "; " + 160;
                         that.userinfo()
-                        that.gettasktype()
+//                        this.gettasktype()
                       })
                   },
                   onFail: function (err) {
-                    //      console.log('requestAuthCode fail: ' + JSON.stringify(err));
+                    //          console.log('requestAuthCode fail: ' + JSON.stringify(err));
                   }
                 });
               }
             );
             dd.error(function (err) {
-              //    console.log('dd error: ' + JSON.stringify(err));
+              //      console.log('dd error: ' + JSON.stringify(err));
             });
           }, function (res) {
             // 处理失败的结果
@@ -277,7 +209,6 @@
     .recent {
       color: rgb(4, 190, 2)
     }
-    /*<x-button plain type="primary" class="custom-primary-red"*/
   }
 
   .custom-primary-red {

@@ -33,6 +33,10 @@ import Myapprovemobile from './components/myapprovemobile.vue'
 import Dynamicmobile from './components/dynamicmobile.vue'
 import taskconditionmobile from './components/showtasksconditionmobile.vue'
 import personinfomobile from './components/Personinfomobile.vue'
+import Checktaskmobile from './components/checkmobile.vue'
+import Checktaskdetailmobile from './components/checkdetailmobile.vue'
+import MyTaskmobile from './components/mytaskmobile.vue'
+import Tododetailmobile from './components/tododetailmobile.vue'
 
 Vue.use(VueRouter)
 import VueResource from 'vue-resource'
@@ -70,7 +74,11 @@ const routes = [
   {path: '/mobilemyapprove', component: Myapprovemobile},
   {path: '/mobiledynamic', component: Dynamicmobile},
   {path: '/mobiletaskcondition/:id', component: taskconditionmobile},
-  {path: '/mobilepersoninfo', component: personinfomobile}
+  {path: '/mobilepersoninfo', component: personinfomobile},
+  {path: '/mobilechecktask', component: Checktaskmobile},
+  {path: '/mobilechecktaskdetail/:id', component: Checktaskdetailmobile},
+  {path: '/mobilemytask', component: MyTaskmobile},
+  {path: '/mobiletododetail/:id', component: Tododetailmobile},
 ]
 
 
