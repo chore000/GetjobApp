@@ -22,8 +22,10 @@
 
       </x-dialog>
     </div>
-    <div v-for="(task,index) in alltasks.list">
-      <group>
+    <div  v-infinite-scroll="loadMore"
+          infinite-scroll-disabled="loading"
+          infinite-scroll-distance="5">
+      <group v-for="(task,index) in alltasks.list">
         <cell title='编号'>
           <div>
             <span style="color: green">{{index + 1}}</span>
@@ -63,6 +65,7 @@
         </flexbox>
 
       </group>
+      <load-more :show-loading="loading" :tip="tips" background-color="#fbf9fe"></load-more>
 
     </div>
 
@@ -80,7 +83,7 @@
     Cell,
     Group,
     XDialog,
-    XTextarea,
+    XTextarea,LoadMore,
     TransferDomDirective as TransferDom
   } from 'vux'
 
@@ -92,7 +95,7 @@
       Divider,
       XButton,
       Flexbox, FlexboxItem,
-      Cell, Group, XDialog, XTextarea
+      Cell, Group, XDialog, XTextarea,LoadMore,
     },
     data() {
       return {
@@ -101,7 +104,12 @@
         title: '待办事项',
         undo: '',
         myjs: '',
-        alltasks: [],
+        alltasks: {list:[]},
+        pagesize:10,
+        pagenum: 1,
+        loading: false,
+        tips: '加载中',
+        allloaded: false,
         comment: ''
       }
     },
@@ -117,7 +125,7 @@
         var res
         //   console.log("getjob:" + taskid)
         DingTalkPC.device.notification.confirm({
-          message: '是否放弃此任务',
+          message: '是否放弃此任务,放弃任务后保证积分不返还',
           title: "提示",
           buttonLabels: ['放弃', '我再想想'],
           onSuccess: function (result) {
@@ -198,15 +206,45 @@
 
       },
       getalltasksundo() {
-        this.$http.post(localStorage.getItem("url") + "/task/alltaskundo", {
-          assigneeid: this.myjs.userid,
-          pagenum: '1',
-          pagesize: '10'
-        }, {emulateJSON: true}).then(
-          function (R) {
-            this.alltasks = R.body
-            //   console.log(JSON.stringify(R.body))
-          })
+        /*     this.$http.post(localStorage.getItem("url") + "/task/alltaskundo", {
+               assigneeid: this.myjs.userid,
+               pagenum: '1',
+               pagesize: '10'
+             }, {emulateJSON: true}).then(
+               function (R) {
+                 this.alltasks = R.body
+                 //   console.log(JSON.stringify(R.body))
+               })*/
+      },
+      loadMore() {
+        var that = this
+        if(that.allloaded){
+          that.tips="数据已全部加载"
+          that.loading = false;
+          return
+        }
+        that.loading = true;
+
+        console.log(that.pagenum)
+        setTimeout(() => {
+          this.$http.post(localStorage.getItem("url") + "/task/alltaskundo", {
+            pagesize: that.pagesize, pagenum: that.pagenum
+          }, {emulateJSON: true}).then(
+            function (R) {
+              that.pagenum = that.pagenum + 1
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              console.log(JSON.stringify(R.body.list))
+              var res = R.body
+              res.list.forEach((task) => {
+                var taskdetail = eval("(" + task.taskapply + ")")
+                task.taskapply = taskdetail
+              })
+              that.alltasks.list = that.alltasks.list.concat(res.list)
+            })
+        }, 500)
+
+
       },
       getCookie(c_name) {
         var c_start

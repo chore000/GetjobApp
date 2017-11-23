@@ -5,8 +5,10 @@
     <divider>{{title}}</divider>
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
 
-    <div v-for="(task,index) in alltasks.list">
-      <group>
+    <div v-infinite-scroll="loadMore"
+         infinite-scroll-disabled="loading"
+         infinite-scroll-distance="5">
+      <group v-for="(task,index) in alltasks.list">
         <!--   <cell title='编号'>
              <div>
                <span style="color: green">{{index + 1}}</span>
@@ -71,12 +73,13 @@
           </flexbox-item>
 
           <flexbox-item>
-            <x-button type="warn" @click.native="stopapply(task.id)">任务终止(待开发)</x-button>
+            <x-button type="warn" @click.native="stopapply(task.id)">任务终止</x-button>
           </flexbox-item>
         </flexbox>
       </group>
+      <load-more :show-loading="loading" :tip="tips" background-color="#fbf9fe"></load-more>
       <!--<x-button type="primary">完成任务</x-button><x-button type="default">放弃任务</x-button>-->
-
+      <!--<x-button type="warn" @click.native="showmore()" v-if="!lastPage">加载更多</x-button>-->
     </div>
 
 
@@ -84,7 +87,7 @@
 </template>
 
 <script>
-  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Group, Checklist, CheckerItem} from 'vux'
+  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Group, Checklist, CheckerItem,LoadMore} from 'vux'
 
   export default {
     components: {
@@ -92,7 +95,7 @@
       TimelineItem,
       XButton,
       Flexbox, FlexboxItem,
-      Cell, Group, Checklist, CheckerItem
+      Cell, Group, Checklist, CheckerItem,LoadMore
     },
     data() {
       return {
@@ -100,7 +103,13 @@
         title: '已发任务',
         undo: '',
         myjs: '',
-        alltasks: []
+        alltasks: [],
+        pagesize: 10,
+        pagenum: 1,
+        loading: false,
+        tips: '加载中',
+        allloaded: false
+
       }
     },
     created() {
@@ -117,6 +126,57 @@
           })
 
       },
+      loadMore() {
+        var that = this
+        if(that.allloaded){
+          that.tips="数据已全部加载"
+          that.loading = false;
+          return
+        }
+        that.loading = true;
+
+        console.log(that.pagenum)
+        setTimeout(() => {
+          that.$http.post(localStorage.getItem("url") + "/taskapply/getmyapply", {
+            pagesize: that.pagesize, pagenum: that.pagenum+1
+          }, {emulateJSON: true}).then(
+            function (R) {
+              that.pagenum = that.pagenum + 1
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              console.log(JSON.stringify(R.body.list))
+              var res = R.body
+              res.list.forEach((task) => {
+                var taskdetail = eval("(" + task.taskapply + ")")
+                task.taskapply = taskdetail
+              })
+              this.alltasks.list = this.alltasks.list.concat(res.list)
+            })
+        }, 500)
+
+
+      },
+
+      showmore() {
+        this.$http.post(localStorage.getItem("url") + "/taskapply/getmyapply", {
+          assigneeid: this.myjs.userid,
+          pagenum: this.pagenum + 1,
+          pagesize: this.pagesize
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.pagenum = this.pagenum + 1
+            var res = R.body
+            res.list.forEach((task) => {
+              var taskdetail = eval("(" + task.taskapply + ")")
+              task.taskapply = taskdetail
+            })
+            this.alltasks.list = this.alltasks.list.concat(res.list)
+            this.lastPage = res.lastPage
+
+            //  console.log(JSON.stringify(R.body))
+          })
+      },
+
       open(value) {
 //        this.toast(value)
         var url;
@@ -163,7 +223,7 @@
         this.$http.post(localStorage.getItem("url") + "/taskapply/getmyapply", {
           assigneeid: this.myjs.userid,
           pagenum: '1',
-          pagesize: '10'
+          pagesize: this.pagesize
         }, {emulateJSON: true}).then(
           function (R) {
 
@@ -173,7 +233,7 @@
               task.taskapply = taskdetail
             })
             this.alltasks = res
-
+            this.lastPage = res.lastPage
             //  console.log(JSON.stringify(R.body))
           })
       },

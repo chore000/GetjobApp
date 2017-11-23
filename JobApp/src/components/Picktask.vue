@@ -4,16 +4,44 @@
 
     <divider>{{title}}</divider>
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
+    <x-button @click.native="gettaskcond">任务概况</x-button>
+    <x-table v-if="taskscond.length>0">
+      <thead>
+      <tr>
+        <th>区域</th>
+        <th>待抢数量</th>
+        <th>正在执行</th>
+        <!--<th>合计</th>-->
+
+      </tr>
+      </thead>
+      <tbody>
+      <tr v-for="task in taskscond">
+        <td>{{task.name}}</td>
+        <td @click="getalltasksall(task.area)">{{task.todo}}</td>
+        <td @click="getalltaskdoing(task.area)">{{task.doing}}</td>
+
+      </tr>
+
+      </tbody>
+    </x-table>
+    <!--   <p v-for="mark in mymarks">操作类型{{mark.type}}<br/>分数变化{{mark.marks}}；时间:{{mark.createtime}}
+         <router-link :to="'taskdetail/'+mark.taskid">查看</router-link>
+       </p>-->
 
     <group>
-      <popup-radio title="查看所有任务（默认加载的是可以抢的任务）" :options="arealist" v-model="yourarea" @on-change="choosearea"></popup-radio>
+      <popup-radio title="默认加载的是可以抢的任务" :options="arealist" readonly v-model="yourarea"
+      ></popup-radio>
     </group>
-    <div v-for="(task,index) in alltasks.list">
-      <group>
-        <cell title='任务等级'>
-          <div>
-            <span style="color: green">{{task.tasklvl}}</span>
-          </div>
+    <div v-infinite-scroll="loadMore"
+         infinite-scroll-disabled="loading"
+         infinite-scroll-distance="5">
+      <group v-for="(task,index) in alltasks.list">
+        <cell title='抢单人(点击可直接沟通)'>
+          <span @click="callperson(task.assignee)">{{task.jobnum}}{{task.name}}</span>
+        </cell>
+        <cell title='等级要求'>
+          <popup-radio title="" readonly :options="tasklvlvalues" v-model="task.tasklvl"></popup-radio>
         </cell>
         <cell title='工作项目'>
           <div>
@@ -43,9 +71,10 @@
         <checklist disabled title="" :options="commonList" v-model="task.type"
         ></checklist>
 
-        <x-button type="primary" @click.native="getjob(task.id)">抢任务</x-button>
+        <x-button type="primary" @click.native="getjob(task.id)" v-if="mode!=2">抢任务</x-button>
 
       </group>
+      <load-more :show-loading="loading" :tip="tips" background-color="#fbf9fe"></load-more>
     </div>
 
 
@@ -53,14 +82,19 @@
 </template>
 
 <script>
-  import {Divider, XButton, Cell, Checklist, Group, PopupRadio} from 'vux'
+  var corpId = "";  // 企业的corpId
+  var signature = "";
+  var nonceStr = "";
+  var timeStamp = "";
+  var agentId = "";
+  import {Divider, XButton, Cell, Checklist, Group, PopupRadio, XTable, LoadMore} from 'vux'
 
   export default {
     components: {
       Group,
       Divider,
       XButton,
-      Cell, Checklist, PopupRadio
+      Cell, Checklist, PopupRadio, XTable, LoadMore
     },
     data() {
       return {
@@ -72,7 +106,14 @@
         tasktypelist: [],
         commonList: [],
         arealist: [],
-        yourarea: ''
+        yourarea: '',
+        taskscond: [],
+        mode: 1,
+        type: 'todo',
+        pagenum: 1,
+        loading: false,
+        tips: '加载中',
+        allloaded: false
       }
     },
     created() {
@@ -80,7 +121,7 @@
     },
     methods: {
       choosearea() {
-        this.getalltasksall()
+//        this.getalltasksall(this.yourarea)
       },
       gettaskarea() {
         this.$http.post(localStorage.getItem("url") + "/tasktype/gettaskArea", {
@@ -92,6 +133,7 @@
           })
 
       },
+
       gettasktype() {
         this.$http.post(localStorage.getItem("url") + "/tasktype/gettasktype", {
           access_token: this.getCookie("access_token"),
@@ -99,6 +141,16 @@
         }, {emulateJSON: true}).then(
           function (R) {
             this.commonList = R.body
+          })
+
+      },
+      gettaskcond() {
+        this.$http.post(localStorage.getItem("url") + "/task/alltaskcondition", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.taskscond = R.body
           })
 
       },
@@ -113,6 +165,31 @@
               this.getalltasks()
           })
 
+      },
+      getlvlname() {
+        this.$http.post(localStorage.getItem("url") + "/tasktype/getlvlname", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.tasklvlvalues = R.body
+            console.log(R.body)
+          })
+
+      },
+      callperson(assi) {
+        DingTalkPC.biz.util.open({
+          name: 'profile',//页面名称
+          params: {
+            id: assi,// String 必选 用户工号
+            corpId: corpId //String 必选 企业id
+          },//传参
+          onSuccess: function () {
+            /**/
+          },
+          onFail: function (err) {
+          }
+        });
       },
       toast(msg) {
         DingTalkPC.device.notification.toast({
@@ -131,7 +208,7 @@
         var res
         //     console.log("getjob:" + taskid)
         DingTalkPC.device.notification.confirm({
-          message: '是否抢此任务',
+          message: '是否抢此任务，抢任务会暂扣积分作为保证分，完成后返还',
           title: "提示",
           buttonLabels: ['必须的', '放弃'],
           onSuccess: function (result) {
@@ -159,7 +236,12 @@
 
 
       },
-      getalltasksall() {
+      getalltasksall(area) {
+        this.tips = '加载中'
+        this.allloaded = false
+        this.mode = 1
+        this.yourarea = area
+        this.pagenum=1
         this.$http.post(localStorage.getItem("url") + "/task/picktasks", {
           assigneeid: this.myjs.userid, area: this.yourarea,
           pagenum: '1',
@@ -175,6 +257,96 @@
             this.alltasks = res
           })
       },
+      getalltaskdoing(area) {
+        var that = this
+        that.tips = '加载中'
+        that.allloaded = false
+        that.mode = 2
+        that.pagenum=1
+        that.yourarea = area
+        that.$http.post(localStorage.getItem("url") + "/task/taskdoingbyarea", {
+          assigneeid: this.myjs.userid, area: this.yourarea,
+          pagenum: '1',
+          pagesize: '10'
+        }, {emulateJSON: true}).then(
+          function (R) {
+//           var tasks = R.body
+            var res = R.body
+            res.list.forEach((task) => {
+              var type = eval("(" + task.type + ")")
+              task.type = type
+            })
+            that.alltasks = res
+            console.log('mdoe：' + that.mode)
+          })
+      },
+
+      loadMore() {
+        var that = this
+        if (that.allloaded) {
+          that.tips = "数据已全部加载"
+          that.loading = false;
+          return
+        }
+        that.loading = true;
+        if (that.mode == 1) {
+          that.$http.post(localStorage.getItem("url") + "/task/picktasks", {
+            assigneeid: that.myjs.userid, area: that.yourarea,
+            pagenum: that.pagenum + 1,
+            pagesize: '10'
+          }, {emulateJSON: true}).then(
+            function (R) {
+//           var tasks = R.body
+              that.pagenum = that.pagenum + 1
+              var res = R.body
+              res.list.forEach((task) => {
+                var type = eval("(" + task.type + ")")
+                task.type = type
+              })
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              that.alltasks.list = that.alltasks.list.concat(res.list)
+            })
+        }
+        else (that.mode == 2)
+        {
+          that.$http.post(localStorage.getItem("url") + "/task/taskdoingbyarea", {
+            assigneeid: that.myjs.userid, area: that.yourarea,
+            pagenum: that.pagenum + 1,
+            pagesize: '10'
+          }, {emulateJSON: true}).then(
+            function (R) {
+//           var tasks = R.body
+              that.pagenum = that.pagenum + 1
+              var res = R.body
+              res.list.forEach((task) => {
+                var type = eval("(" + task.type + ")")
+                task.type = type
+              })
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              that.alltasks.list = that.alltasks.list.concat(res.list)
+              console.log('mdoe：' + that.mode)
+            })
+
+        }
+        console.log(that.pagenum)
+        /*      setTimeout(() => {
+                that.$http.post(localStorage.getItem("url") + "/task/gettasklog", {
+                  pagesize: 20, pagenum: that.pagenum
+                }, {emulateJSON: true}).then(
+                  function (R) {
+                    that.pagenum = that.pagenum + 1
+                    that.allloaded = R.body.lastPage
+                    that.loading = false;
+                    console.log(JSON.stringify(R.body.list))
+                    that.tasklog.list = that.tasklog.list.concat(R.body.list)
+                  })
+              }, 500)*/
+
+
+      },
+
       getalltasks() {
         this.$http.post(localStorage.getItem("url") + "/task/picktasksmy", {
           assigneeid: this.myjs.userid, area: this.yourarea,
@@ -207,11 +379,7 @@
       },
       fetchdata() {
         var that = this;
-        var corpId = "";  // 企业的corpId
-        var signature = "";
-        var nonceStr = "";
-        var timeStamp = "";
-        var agentId = "";
+
         that.$http.get(localStorage.getItem("url") + "/getconfig").then(
           function (res) {
             // 处理成功的结果
@@ -258,7 +426,7 @@
                         that.userinfo()
                         that.gettasktype()
                         that.gettaskarea()
-
+                        that.getlvlname()
                       })
                   },
                   onFail: function (err) {

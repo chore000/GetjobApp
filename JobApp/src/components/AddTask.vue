@@ -9,9 +9,12 @@
                 title="时间节点"></datetime>
       <datetime v-model="publishtime" format="YYYY-MM-DD HH:mm" :minute-list="['00', '15', '30', '45']"
                 title="任务发布时间"></datetime>
-      <x-number title="任务分数" v-model="taskmark" button-style="round" :min="1" :max="50"></x-number>
+      <x-input title="任务分数" v-model="taskmark" :is-type="isnum" ></x-input>
       <x-number title="任务数量" v-model="taskcount" button-style="round" :min="1" :max="50"></x-number>
-      <x-number title="等级要求" v-model="tasklvl" button-style="round" :min="1" :max="50"></x-number>
+  <!--    <checklist title="等级要求" required :options="tasklvlvalues" v-model="tasklvl"
+      ></checklist>-->
+      <popup-radio title="等级要求" :options="tasklvlvalues" v-model="tasklvl"></popup-radio>
+      <!--<x-number title="等级要求" v-model="tasklvl" getlvlname></x-number>-->
       <popup-radio title="区域选择" :options="arealist" v-model="taskarea"></popup-radio>
     </group>
     <group>
@@ -59,7 +62,7 @@
     ChinaAddressData,
     XAddress,
     XTextarea,
-    XSwitch, Checklist, XButton, PopupRadio
+    XSwitch, Checklist, XButton, PopupRadio,XTable
   } from 'vux'
 
   export default {
@@ -75,17 +78,24 @@
       ChinaAddressData,
       XAddress,
       XTextarea,
-      XSwitch, Checklist, XButton, PopupRadio
+      XSwitch, Checklist, XButton, PopupRadio,XTable
     },
     data() {
       return {
+        isnum: function (value) {
+          return {
+             valid:isNaN(value)===false,
+            msg: '必须为数字'
+          }
+        },
         myinfo: '',
         taskname: '',
         taskcontent: '',
         reqtime: '',
         taskmark: 1,
         taskcount: 1,
-        tasklvl: 1,
+        tasklvl: 4,
+        tasklvlvalues: [],
         tasktypelist: [],
         assigneecase: false,
         taskarea: '',
@@ -149,6 +159,17 @@
           })
 
       },
+      getlvlname() {
+        this.$http.post(localStorage.getItem("url") + "/tasktype/getlvlname", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.tasklvlvalues = R.body
+            console.log(R.body)
+          })
+
+      },
       chooseadmin() {
         var that = this
         //    console.log("chooseadmin")
@@ -158,11 +179,15 @@
           users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
           corpId: corpId, //企业id
           max: 10, //人数限制，当multiple为true才生效，可选范围1-1500
+          startWithDepartmentId:-1,
+          isNeedSearch:true, // 是否需要搜索功能
           onSuccess: function (data) {
 
             that.admin = data[0]
             that.postinfo.admin = data[0].emplId
             that.isadmin = true
+            that.checker = data[0]
+            that.postinfo.checker = data[0].emplId
             /* data结构
               [{
                 "name": "张三", //姓名
@@ -188,6 +213,8 @@
           users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
           corpId: corpId, //企业id
           max: 10, //人数限制，当multiple为true才生效，可选范围1-1500
+          startWithDepartmentId:-1,
+          isNeedSearch:true, // 是否需要搜索功能
           onSuccess: function (data) {
 
             that.checker = data[0]
@@ -218,6 +245,8 @@
             users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
             corpId: corpId, //企业id
             max: 10, //人数限制，当multiple为true才生效，可选范围1-1500
+            startWithDepartmentId:-1,
+            isNeedSearch:true, // 是否需要搜索功能
             onSuccess: function (data) {
 
               that.assignee = data
@@ -431,6 +460,7 @@
                         that.userinfo()
                         that.gettasktype()
                         that.gettaskarea()
+                        that.getlvlname()
                       })
                   },
                   onFail: function (err) {

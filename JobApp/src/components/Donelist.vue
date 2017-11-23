@@ -4,9 +4,10 @@
 
     <divider>{{title}}</divider>
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
-
-    <div v-for="(task,index) in alltasks.list">
-      <group>
+    <div  v-infinite-scroll="loadMore"
+          infinite-scroll-disabled="loading"
+          infinite-scroll-distance="5">
+      <group v-for="(task,index) in alltasks.list">
         <cell title='编号'>
           <div>
             <span style="color: green">{{index + 1}}</span>
@@ -56,6 +57,7 @@
         <!--</flexbox>-->
       </group>
       <!--<x-button type="primary">完成任务</x-button><x-button type="default">放弃任务</x-button>-->
+      <load-more :show-loading="loading" :tip="tips" background-color="#fbf9fe"></load-more>
 
     </div>
 
@@ -64,7 +66,7 @@
 </template>
 
 <script>
-  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Group} from 'vux'
+  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Group,LoadMore} from 'vux'
 
   export default {
     components: {
@@ -72,7 +74,7 @@
       TimelineItem,
       XButton,
       Flexbox, FlexboxItem,
-      Cell, Group
+      Cell, Group,LoadMore
     },
     data() {
       return {
@@ -80,7 +82,13 @@
         title: '已办事项',
         undo: '',
         myjs: '',
-        alltasks: []
+        alltasks:{list:[]} ,
+        pagesize:10,
+        pagenum: 1,
+        loading: false,
+        tips: '加载中',
+        allloaded: false,
+
       }
     },
     created() {
@@ -116,8 +124,39 @@
           })
 
       },
+      loadMore() {
+        var that = this
+        if(that.allloaded){
+          that.tips="数据已全部加载"
+          that.loading = false;
+          return
+        }
+        that.loading = true;
+
+        console.log(that.pagenum)
+        setTimeout(() => {
+          that.$http.post(localStorage.getItem("url") + "/task/alltaskdo", {
+            pagesize: that.pagesize, pagenum: that.pagenum
+          }, {emulateJSON: true}).then(
+            function (R) {
+              that.pagenum = that.pagenum + 1
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              console.log(JSON.stringify(R.body.list))
+              var res = R.body
+              res.list.forEach((task) => {
+                var taskdetail = eval("(" + task.taskapply + ")")
+                task.taskapply = taskdetail
+              })
+              that.alltasks.list = that.alltasks.list.concat(res.list)
+            })
+        }, 500)
+
+
+      },
+
       getalltasksundo() {
-        this.$http.post(localStorage.getItem("url") + "/task/alltaskdo", {
+/*        this.$http.post(localStorage.getItem("url") + "/task/alltaskdo", {
           assigneeid: this.myjs.userid,
           pagenum: '1',
           pagesize: '10'
@@ -125,7 +164,7 @@
           function (R) {
             this.alltasks = R.body
        //     console.log(JSON.stringify(R.body))
-          })
+          })*/
       },
       getCookie(c_name) {
         var c_start

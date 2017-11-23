@@ -1,6 +1,10 @@
 <template>
+  <!--增加缓存设置-->
   <div id="app">
-    <router-view></router-view>
+    <keep-alive>
+      <router-view v-if="$route.meta.keepAlive"></router-view>
+    </keep-alive>
+    <router-view v-if="!$route.meta.keepAlive"></router-view>
   </div>
 </template>
 

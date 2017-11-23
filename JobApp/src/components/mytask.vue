@@ -5,8 +5,10 @@
     <divider>{{title}}</divider>
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
 
-    <div v-for="(task,index) in alltasks.list">
-      <group>
+    <div  v-infinite-scroll="loadMore"
+          infinite-scroll-disabled="loading"
+          infinite-scroll-distance="5">
+      <group  v-for="(task,index) in alltasks.list">
         <cell title='任务等级'>
           <div>
             <span style="color: green">{{task.tasklvl}}</span>
@@ -36,6 +38,8 @@
           <span slot="title" style="color:blue">查看详情</span>
         </cell>
       </group>
+      <load-more :show-loading="loading" :tip="tips" background-color="#fbf9fe"></load-more>
+
     </div>
 
 
@@ -43,7 +47,7 @@
 </template>
 
 <script>
-  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Checklist, Confirm, ConfirmPlugin} from 'vux'
+  import {Divider, TimelineItem, XButton, Flexbox, FlexboxItem, Cell, Checklist, Confirm, ConfirmPlugin,LoadMore} from 'vux'
   import Group from "../../node_modules/vux/src/components/group/index.vue";
 
   export default {
@@ -53,7 +57,7 @@
       TimelineItem,
       XButton,
       Flexbox, FlexboxItem,
-      Cell, Checklist, Confirm, ConfirmPlugin
+      Cell, Checklist, Confirm, ConfirmPlugin,LoadMore
     },
     data() {
       return {
@@ -61,7 +65,12 @@
         title: '我的待办',
         undo: '',
         myjs: '',
-        alltasks: [],
+        alltasks: {list:[]},
+        pagesize:10,
+        pagenum: 1,
+        loading: false,
+        tips: '加载中',
+        allloaded: false,
         tasktypelist: [],
         commonList: []
       }
@@ -96,18 +105,49 @@
           }
         })
       },
+      loadMore() {
+        var that = this
+        if(that.allloaded){
+          that.tips="数据已全部加载"
+          that.loading = false;
+          return
+        }
+        that.loading = true;
+
+        console.log(that.pagenum)
+        setTimeout(() => {
+          this.$http.post(localStorage.getItem("url") + "/task/getreleasetask", {
+            pagesize: that.pagesize, pagenum: that.pagenum
+          }, {emulateJSON: true}).then(
+            function (R) {
+              that.pagenum = that.pagenum + 1
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              console.log(JSON.stringify(R.body.list))
+              var res = R.body
+              res.list.forEach((task) => {
+                var taskdetail = eval("(" + task.taskapply + ")")
+                task.taskapply = taskdetail
+              })
+              that.alltasks.list = that.alltasks.list.concat(res.list)
+            })
+        }, 500)
+
+
+      },
+
 
       getalltasks() {
-        this.$http.post(localStorage.getItem("url") + "/task/getreleasetask", {
-          assigneeid: this.myjs.userid,
-          pagenum: '1',
-          pagesize: '10'
-        }, {emulateJSON: true}).then(
-          function (R) {
-//           var tasks = R.body
-            var res = R.body
-            this.alltasks = res
-          })
+//        this.$http.post(localStorage.getItem("url") + "/task/getreleasetask", {
+//          assigneeid: this.myjs.userid,
+//          pagenum: '1',
+//          pagesize: '10'
+//        }, {emulateJSON: true}).then(
+//          function (R) {
+////           var tasks = R.body
+//            var res = R.body
+//            this.alltasks = res
+//          })
       },
       getCookie(c_name) {
         var c_start

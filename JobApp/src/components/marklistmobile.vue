@@ -28,7 +28,7 @@
       </tr>
       </thead>
       <tbody>
-      <tr v-for="(task,index) in alltasks">
+      <tr v-for="(task,index) in alltasks"  v-if="task.mark>0">
         <td>{{task.jobnum}}</td>
         <td>{{task.name}}</td>
         <td>{{task.num}}</td>

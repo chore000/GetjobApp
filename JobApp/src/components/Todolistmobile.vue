@@ -117,7 +117,7 @@
         var res
         //   console.log("getjob:" + taskid)
         dd.device.notification.confirm({
-          message: '是否放弃此任务',
+          message: '是否放弃此任务,放弃任务后保证积分不返还',
           title: "提示",
           buttonLabels: ['放弃', '我再想想'],
           onSuccess: function (result) {

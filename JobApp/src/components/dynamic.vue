@@ -3,19 +3,24 @@
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
 
 
-    <group>
-      <card :header="{title:'动态'}">
+    <!--<group>-->
+    <!--<card :header="{title:'动态'}">-->
 
+    <ul
+      v-infinite-scroll="loadMore"
+      infinite-scroll-disabled="loading"
+      infinite-scroll-distance="5">
+      <p slot="content" v-for="i in tasklog.list" class="card-padding">
+        <router-link :to="'taskdetail/'+i.taskid">
+          {{i.name}}({{i.jobnum}}){{i.meaning}}【{{i.jobname}}】 @{{i.createtime}}
+        </router-link>
+      </p>
 
-        <p  slot="content"  v-for="i in tasklog.list"  class="card-padding">
-          <router-link :to="'taskdetail/'+i.taskid">
-              {{i.name}}({{i.jobnum}}){{i.meaning}}【{{i.jobname}}】 @{{i.createtime}}
-          </router-link>
-        </p>
+      <load-more :show-loading="loading" :tip="tips" background-color="#fbf9fe"></load-more>
+    </ul>
+    <!--</card>-->
 
-      </card>
-
-    </group>
+    <!--</group>-->
     <br>
     <card>
       <!--<img slot="header" :src="mysrc" style="width:100%;display:block;">-->
@@ -42,7 +47,7 @@
   var nonceStr = "";
   var timeStamp = "";
   var agentId = "";
-  import {Group, Divider, Card, Marquee, MarqueeItem, XImg, Cell, Blur, Badge} from 'vux'
+  import {Group, Divider, Card, Marquee, MarqueeItem, XImg, Cell, Blur, Badge, LoadMore} from 'vux'
 
   export default {
     components: {
@@ -51,7 +56,7 @@
 
       Group,
 
-      XImg, Marquee, MarqueeItem, Cell, Blur, Badge
+      XImg, Marquee, MarqueeItem, Cell, Blur, Badge, LoadMore
     },
     data() {
       return {
@@ -59,8 +64,12 @@
         myinfo: '',
         name: this.getCookie("user"),
         myjs: this.getCookiejson("user"),
-        tasklog: [],
-        datav: ''
+        tasklog: {list: []},
+        datav: '',
+        pagenum: 2,
+        loading: false,
+        tips: '加载中',
+        allloaded: false
       }
     },
     created() {
@@ -79,11 +88,35 @@
           })
 
       },
+      loadMore() {
+        var that = this
+        if(that.allloaded){
+          that.tips="数据已全部加载"
+          that.loading = false;
+          return
+        }
+        that.loading = true;
 
+        console.log(that.pagenum)
+        setTimeout(() => {
+          that.$http.post(localStorage.getItem("url") + "/task/gettasklog", {
+            pagesize: 20, pagenum: that.pagenum
+          }, {emulateJSON: true}).then(
+            function (R) {
+              that.pagenum = that.pagenum + 1
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              console.log(JSON.stringify(R.body.list))
+              that.tasklog.list = that.tasklog.list.concat(R.body.list)
+            })
+        }, 500)
+
+
+      },
       gettasklog() {
         this.$http.post(localStorage.getItem("url") + "/task/gettasklog", {
-          access_token: this.getCookie("access_token"),pagesize:20,
-          credentials: true
+          pagesize: 20,
+
         }, {emulateJSON: true}).then(
           function (R) {
 
@@ -153,7 +186,7 @@
             timeStamp = result.timeStamp;
             agentId = result.agentid;
             corpId = result.corpId;
-         //   console.log(corpId)
+            //   console.log(corpId)
             DingTalkPC.config({
               agentId: agentId,
               corpId: corpId,
@@ -171,14 +204,14 @@
             });
 
             DingTalkPC.ready(function () {
-        //        console.log('DingTalkPC.ready rocks!')
+                //        console.log('DingTalkPC.ready rocks!')
 
 
                 //校验成功后，使用获取免登授权码接口获取CODE
                 DingTalkPC.runtime.permission.requestAuthCode({
                   corpId: corpId, //企业id
                   onSuccess: function (info) {
-             //       console.log('authcode' + info.code);
+                    //       console.log('authcode' + info.code);
                     that.$http.post(localStorage.getItem("url") + "/login", {
                       code: info.code,
                       corpid: corpId,
@@ -192,13 +225,13 @@
                       })
                   },
                   onFail: function (err) {
-                //    console.log('requestAuthCode fail: ' + JSON.stringify(err));
+                    //    console.log('requestAuthCode fail: ' + JSON.stringify(err));
                   }
                 });
               }
             );
             DingTalkPC.error(function (err) {
-       //       console.log('dd error: ' + JSON.stringify(err));
+              //       console.log('dd error: ' + JSON.stringify(err));
             });
           }, function (res) {
             // 处理失败的结果

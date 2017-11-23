@@ -1,8 +1,7 @@
 <template>
   <div>
 
-
-    <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
+    <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}} <button @click="getmarks" style="color: blue"> 积分：{{mymark}}</button></divider>
     <blur :blur-amount=40 :url=url :height="120">
       <p class="center"><img :src=url></p>
     </blur>
@@ -48,9 +47,36 @@
 
     <divider>工作情况</divider>
 
+    <div>
+      <card :header="{title:' 个人积分(测试功能，点击积分查看)'}"  v-if="mymarks.length>0">
+        <div slot="content">
+          <x-table>
+            <thead>
+            <tr>
+              <th>操作类型</th>
+              <th>关联任务</th>
+              <th>分数变化</th>
+              <th>时间</th>
+              <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr  v-for="mark in mymarks">
+              <td>{{mark.meaning}}</td>
+              <td>{{mark.jobname}}</td>
+              <td>{{mark.marks}}</td>
+              <td>{{mark.createtime}}</td>
+              <td>  <router-link :to="'taskdetail/'+mark.taskid">查看</router-link></td>
+            </tr>
 
+            </tbody>
+          </x-table>
+        </div>
 
-        <group  v-if="marks.lengh>0">
+      </card>
+
+    </div>
+        <group  >
           <card :header="{title:'今天排名'}" :footer="{title:'查看更多',link:'/mobilemarklist'}">
             <x-table :cell-bordered="false"  slot="content">
               <thead>
@@ -63,7 +89,7 @@
               </tr>
               </thead>
               <tbody>
-              <tr v-for="(img,index) in marks" @click="updateurl(img.avatar)">
+              <tr v-for="(img,index) in marks" @click="updateurl(img.avatar)" >
                 <td>{{index + 1}}</td>
                 <td>{{img.name}}</td>
                 <td>{{img.num}}</td>
@@ -78,7 +104,7 @@
         </group>
 
 
-        <group v-if="tasklog.list.lengh>0">
+        <group >
           <card :header="{title:'动态'}" :footer="{title:'查看更多',link:'/mobiledynamic'}">
             <marquee slot="content" class="card-padding">
               <marquee-item v-for="i in tasklog.list" :key="i.id">
@@ -90,16 +116,6 @@
           </card>
         </group>
 
-
-
-
-    <!--<flexbox :gutter="0"  orient="vertical">-->
-    <!--<flexbox-item></flexbox-item>-->
-    <!--<flexbox-item v-for="(img, index) in marks" :key="index" ><img :src="img.avatar" style="width:50%"  @click="updateurl(img.avatar)"/></flexbox-item>-->
-    <!--<flexbox-item></flexbox-item>-->
-    <!--</flexbox>-->
-
-
     <br>
     <card>
       <!--<img slot="header" :src="mysrc" style="width:100%;display:block;">-->
@@ -110,13 +126,6 @@
           <br/>HL Zhao</p>
       </div>
     </card>
-    <!--<divider>{{name}}</divider>-->
-    <!--<group>-->
-    <!--<x-textarea :max="200" :placeholder="'每日工作计划'"></x-textarea>-->
-    <!--</group>-->
-    <!--<divider>我的信息</divider>-->
-    <!--<span>{{myinfo}}</span>-->
-    <!--&lt;!&ndash;<x-img :src="mysrc"></x-img>&ndash;&gt;-->
   </div>
 </template>
 
@@ -163,7 +172,9 @@
         tasklog: [],
         datav: '',
         url:'',
-        marks: []
+        marks: [],
+        mymark: '',
+        mymarks: []
       }
     },
     created() {
@@ -250,6 +261,30 @@
           function (R) {
 
             this.datav = R.body
+          })
+
+      },
+      getmark() {
+        this.$http.post(localStorage.getItem("url") + "/task/getmymarkall", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+
+            this.mymark = R.body
+          })
+
+      },
+      getmarks() {
+
+        this.$http.post(localStorage.getItem("url") + "/task/getdetailmarkbyid", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+
+
+            this.mymarks = R.body
           })
 
       },
@@ -359,6 +394,7 @@
                         that.gettasklog()
                         that.getdatav()
                         that.gettop3()
+                        that.getmark()
                       })
                   },
                   onFail: function (err) {

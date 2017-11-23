@@ -3,17 +3,48 @@
   <div>
 
     <divider>{{title}}</divider>
-    <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
+    <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}} </divider>
+    <x-button @click.native="gettaskcond">任务概况</x-button>
+    <card :header="{title:'任务详情'}" v-if="taskscond.length>0">
+      <div slot="content">
+        <x-table>
+          <thead>
+          <tr>
+            <th>区域</th>
+            <th>待抢数量</th>
+            <th>正在执行</th>
+            <!--<th>合计</th>-->
+            <th>操作</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr v-for="task in taskscond">
+            <td>{{task.name}}</td>
+            <td>{{task.todo}}</td>
+            <td>{{task.doing}}</td>
+            <td>
+              <a @click="yourarea=task.area"><x-icon type="ios-search" size="30"></x-icon></a>
+            </td>
+          </tr>
 
+          </tbody>
+        </x-table>
+        <!--   <p v-for="mark in mymarks">操作类型{{mark.type}}<br/>分数变化{{mark.marks}}；时间:{{mark.createtime}}
+             <router-link :to="'taskdetail/'+mark.taskid">查看</router-link>
+           </p>-->
+
+      </div>
+
+    </card>
     <group>
       <popup-radio title="查看所有任务（默认加载的是可以抢的任务）" :options="arealist" v-model="yourarea" @on-change="choosearea"></popup-radio>
     </group>
     <div v-for="(task,index) in alltasks.list">
       <group>
-        <cell title='任务等级'>
-          <div>
-            <span style="color: green">{{task.tasklvl}}</span>
-          </div>
+        <cell title='等级要求'>
+          <popup-radio title="" readonly :options="tasklvlvalues" v-model="task.tasklvl"></popup-radio>          <!--<div>-->
+            <!--<span style="color: green">{{task.tasklvl}}</span>-->
+          <!--</div>-->
         </cell>
         <cell title='工作项目'>
           <div>
@@ -52,15 +83,16 @@
   </div>
 </template>
 
+
 <script>
-  import {Divider, XButton, Cell, Checklist, Group, PopupRadio} from 'vux'
+  import {Divider, XButton, Cell, Checklist, Group, PopupRadio, XTable} from 'vux'
 
   export default {
     components: {
       Group,
       Divider,
       XButton,
-      Cell, Checklist, PopupRadio
+      Cell, Checklist, PopupRadio, XTable
     },
     data() {
       return {
@@ -72,7 +104,8 @@
         tasktypelist: [],
         commonList: [],
         arealist: [],
-        yourarea: ''
+        yourarea: '',
+        taskscond:''
       }
     },
     created() {
@@ -81,6 +114,16 @@
     methods: {
       choosearea() {
         this.getalltasksall()
+      },
+      gettaskcond() {
+        this.$http.post(localStorage.getItem("url") + "/task/alltaskcondition", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.taskscond = R.body
+          })
+
       },
       gettaskarea() {
         this.$http.post(localStorage.getItem("url") + "/tasktype/gettaskArea", {
@@ -99,6 +142,17 @@
         }, {emulateJSON: true}).then(
           function (R) {
             this.commonList = R.body
+          })
+
+      },
+      getlvlname() {
+        this.$http.post(localStorage.getItem("url") + "/tasktype/getlvlname", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.tasklvlvalues = R.body
+            console.log(R.body)
           })
 
       },
@@ -131,7 +185,7 @@
         var res
         //     console.log("getjob:" + taskid)
         dd.device.notification.confirm({
-          message: '是否抢此任务',
+          message: '是否抢此任务，抢任务会暂扣积分作为保证分，完成后返还',
           title: "提示",
           buttonLabels: ['必须的', '放弃'],
           onSuccess: function (result) {
@@ -258,7 +312,7 @@
                         that.userinfo()
                         that.gettasktype()
                         that.gettaskarea()
-
+                        that.getlvlname()
                       })
                   },
                   onFail: function (err) {

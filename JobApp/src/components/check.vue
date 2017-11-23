@@ -21,9 +21,11 @@
         </div>
 
       </x-dialog>
-    </div>
-    <div v-for="(task,index) in alltasks.list">
-      <group>
+    </div >
+    <div v-infinite-scroll="loadMore"
+         infinite-scroll-disabled="loading"
+         infinite-scroll-distance="5">
+      <group  v-for="(task,index) in alltasks.list">
         <cell title='编号'>
           <div>
             <span style="color: green">{{index + 1}}</span>
@@ -66,7 +68,7 @@
         </flexbox>-->
 
       </group>
-
+      <load-more :show-loading="loading" :tip="tips" background-color="#fbf9fe"></load-more>
     </div>
 
 
@@ -83,7 +85,7 @@
     Cell,
     Group,
     XDialog,
-    XTextarea,
+    XTextarea,LoadMore,
     TransferDomDirective as TransferDom
   } from 'vux'
 
@@ -95,16 +97,22 @@
       Divider,
       XButton,
       Flexbox, FlexboxItem,
-      Cell, Group, XDialog, XTextarea
+      Cell, Group, XDialog, XTextarea,LoadMore
     },
     data() {
       return {
+
         show: false,
         count: 3,
         title: '检查事项',
         undo: '',
         myjs: '',
-        alltasks: [],
+        alltasks:{list:[]} ,
+        pagesize:10,
+        pagenum: 1,
+        loading: false,
+        tips: '加载中',
+        allloaded: false,
         comment: '',
         stat: -1,
         ctaskid: ''
@@ -207,7 +215,7 @@
 
       },
       getalltasksundo() {
-        this.$http.post(localStorage.getItem("url") + "/task/getchecktask", {
+      /*  this.$http.post(localStorage.getItem("url") + "/task/getchecktask", {
           assigneeid: this.myjs.userid,
           pagenum: '1',
           pagesize: '10'
@@ -215,8 +223,39 @@
           function (R) {
             this.alltasks = R.body
             //   console.log(JSON.stringify(R.body))
-          })
+          })*/
       },
+      loadMore() {
+        var that = this
+        if(that.allloaded){
+          that.tips="数据已全部加载"
+          that.loading = false;
+          return
+        }
+        that.loading = true;
+
+        console.log(that.pagenum)
+        setTimeout(() => {
+          this.$http.post(localStorage.getItem("url") + "/task/getchecktask", {
+            pagesize: that.pagesize, pagenum: that.pagenum
+          }, {emulateJSON: true}).then(
+            function (R) {
+              that.pagenum = that.pagenum + 1
+              that.allloaded = R.body.lastPage
+              that.loading = false;
+              console.log(JSON.stringify(R.body.list))
+              var res = R.body
+              res.list.forEach((task) => {
+                var taskdetail = eval("(" + task.taskapply + ")")
+                task.taskapply = taskdetail
+              })
+              that.alltasks.list = that.alltasks.list.concat(res.list)
+            })
+        }, 500)
+
+
+      },
+
       getCookie(c_name) {
         var c_start
         var c_end

@@ -1,15 +1,25 @@
 <template>
+
   <div>
+    <!--<keep-alive>-->
 
-
-    <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
+    <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}<a @click="getmarks" style="color: blue"> 积分：{{mymark}}</a>
+    </divider>
     <blur :blur-amount=40 :url=url :height="120">
-      <p class="center"><img :src=url></p>
+      <p class="center"><img :src=url>今日积分：{{datav.marks}}</p>
+
     </blur>
 
     <div>
-      <group-title>我的事项</group-title>
-      <grid :cols="5">
+      <!--<group-title>我的事项</group-title>-->
+
+      <cell title="我的事项">
+        <router-link to="/addtask">
+          <x-icon type="ios-plus-empty"></x-icon>
+        </router-link>
+      </cell>
+
+      <grid :cols="4">
         <grid-item link="/todo" class="grid-center">
           任务安排 <span>{{datav.undonum}}</span>
         </grid-item>
@@ -22,13 +32,10 @@
         <grid-item link="/picktasks" class="grid-center">
           任务大厅 <span>{{datav.tasks}}</span>
         </grid-item>
-        <grid-item link="/marklist" class="grid-center">
-          今日分数 <span>{{datav.marks}}</span>
+        <grid-item class="grid-center">
+          消息提醒（待开发） <span></span>
         </grid-item>
 
-        <grid-item link="/addtask" class="grid-center">
-          新增任务  <!--<span>0</span>-->
-        </grid-item>
         <grid-item link="/myapprove" class="grid-center">
           任务审批 <span>{{datav.applycount}}</span>
         </grid-item>
@@ -38,22 +45,55 @@
         <grid-item link="/checktask" class="grid-center">
           检查任务 <span>{{datav.sendcount}}</span>
         </grid-item>
-        <grid-item link="/personinfo" class="grid-center">
-          信息维护 <!--<span>0</span>-->
-        </grid-item>
+
 
       </grid>
     </div>
 
 
-    <divider>工作情况</divider>
+    <div>
+      <card :header="{title:' 个人积分(测试功能，点击积分查看)'}" v-if="mymarks.length>0">
+        <div slot="content">
+          <x-table>
+            <thead>
+            <tr>
+              <th>操作类型</th>
+              <th>关联任务</th>
+              <th>分数变化</th>
+              <th>时间</th>
+              <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="mark in mymarks">
+              <td><span @click="openslide(mark.taskid)">{{mark.meaning}}</span></td>
+              <td>{{mark.jobname}}</td>
+              <td>{{mark.marks}}</td>
+              <td>{{mark.createtime}}</td>
+              <td>
+                <router-link :to="'taskdetail/'+mark.taskid">查看</router-link>
+              </td>
+            </tr>
+
+            </tbody>
+          </x-table>
+          <!--   <p v-for="mark in mymarks">操作类型{{mark.type}}<br/>分数变化{{mark.marks}}；时间:{{mark.createtime}}
+               <router-link :to="'taskdetail/'+mark.taskid">查看</router-link>
+             </p>-->
+        </div>
+
+      </card>
+
+    </div>
+ <divider :keep-alive="true">工作情况 当前在线人数：{{onlinenum}}</divider>
+
 
     <flexbox>
-      <flexbox-item  v-if="marks.length>0">
+      <flexbox-item v-if="marks!=''">
 
         <group>
-          <card :header="{title:'今天排名'}" :footer="{title:'查看更多',link:'/marklist'}">
-            <x-table :cell-bordered="false"  slot="content">
+          <card :header="{title:'昨日排名'}" :footer="{title:'查看更多',link:'/marklist'}">
+            <x-table :cell-bordered="false" slot="content">
               <thead>
               <tr>
                 <th></th>
@@ -79,7 +119,7 @@
         </group>
 
       </flexbox-item>
-      <flexbox-item v-if="tasklog.list.length>0">
+      <flexbox-item v-if="tasklog.list!=''">
         <group>
           <card :header="{title:'动态'}" :footer="{title:'查看更多',link:'/dynamic'}">
             <marquee slot="content" class="card-padding">
@@ -104,10 +144,34 @@
     <!--</flexbox>-->
 
 
-    <br>
     <card>
-      <!--<img slot="header" :src="mysrc" style="width:100%;display:block;">-->
+      <div slot="content" class="card-demo-flex card-demo-content01">
+        <div class="vux-1px-r" @click="callperson">
+          <span> <x-icon type="ios-search" size="13"></x-icon></span>
+          <br/>
+          召唤开发
+        </div>
+        <div class="vux-1px-r">
+          <router-link to="/personinfo">
+            <span><x-icon type="ios-information-outline" size="13"></x-icon></span>
+            <br/>
+            信息维护
+          </router-link>
+        </div>
+        <div class="vux-1px-r">
+          <span>15</span>
+          <br/>
+          吐槽专区
+        </div>
+        <!--      <div class="vux-1px-r">
+                <span>0</span>
+                <br/>
+                吐槽专区
+              </div>-->
+
+      </div>
       <div slot="content">
+
         <p style="color:#999;font-size:12px;" class="align-right">Posted on October 31, 2017</p>
         <p style="color:#999;font-size:12px;" class="align-right">
           BY Intelligent Industrial Technology Center
@@ -121,7 +185,10 @@
     <!--<divider>我的信息</divider>-->
     <!--<span>{{myinfo}}</span>-->
     <!--&lt;!&ndash;<x-img :src="mysrc"></x-img>&ndash;&gt;-->
+    <!--</keep-alive>-->
+
   </div>
+
 </template>
 
 <script>
@@ -167,14 +234,88 @@
         tasklog: [],
         datav: '',
         url: this.getCookiejson("user").avatar,
-        marks: []
+        marks: [],
+        mymark: '',
+        mymarks: [],
+        onlinenum: 3
       }
     },
     created() {
+      console.log(1)
       this.fetchdata()
+      this.initWebSocket()
 
     },
+    mounted: function () {
+
+      console.log(2)
+//      this.fetchdata()
+    },
+    activated: function () {
+      console.log(3)
+//      this.fetchdata()
+      this.gettasklog()
+      this.getdatav()
+
+      this.getmark()
+      this.websock.onmessage = this.websocketonmessage;
+      this.websock.onclose = this.websocketclose;
+    },
     methods: {
+      initWebSocket() {
+        //ws地址
+        console.log('websock:' + JSON.stringify(this.websock == null))
+        if (this.websock != null && this.websock.readyState == this.websock.OPEN) {
+
+        } else {
+          const wsuri = "ws://10.3.12.75:9001/websocket/123";
+          this.websock = new WebSocket(wsuri);
+          console.log('websock:' + JSON.stringify(this.websock == null))
+
+        }
+
+
+      },
+      threadPoxi() {
+        //参数
+        const agentData = "mymessage";
+        //若是ws开启状态
+        if (this.websock.readyState === this.websock.OPEN) {
+          this.websocketsend(agentData)
+        }
+        // 若是 正在开启状态，则等待300毫秒
+        else if (this.websock.readyState === this.websock.CONNECTING) {
+          let that = this;//保存当前对象this
+          setTimeout(function () {
+            that.websocketsend(agentData)
+          }, 300);
+        }
+        // 若未开启 ，则等待500毫秒
+        else {
+          this.initWebSocket();
+          let that = this;//保存当前对象this
+          setTimeout(function () {
+            that.websocketsend(agentData)
+          }, 500);
+        }
+      },
+      websocketonmessage(e) {
+//        const redata = JSON.parse(e.data);
+//        console.log(e.data)
+        var data=eval("("+e.data+")")
+//        console.log(data.message)
+        if(data.type=="count"){
+          this.onlinenum=data.message
+        }
+
+//        this.onlinenum=mes.data.message
+      },
+      websocketsend(agentData) {
+        this.websock.send(agentData);
+      },
+      websocketclose(e) {
+        console.log("connection closed (" + e.code + ")");
+      },
       userinfo() {
         this.$http.post(localStorage.getItem("url") + '/userinfo', {
           access_token: this.getCookie("access_token"),
@@ -237,6 +378,29 @@
           })
 
       },
+      getmark() {
+        this.$http.post(localStorage.getItem("url") + "/task/getmymarkall", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+
+            this.mymark = R.body
+          })
+
+      },
+      getmarks() {
+        this.$http.post(localStorage.getItem("url") + "/task/getdetailmarkbyid", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+
+
+            this.mymarks = R.body
+          })
+
+      },
       toast(msg) {
         DingTalkPC.device.notification.toast({
           type: "information", //toast的类型 alert, success, error, warning, information, confirm
@@ -256,6 +420,7 @@
         url = "taskdetail?index=" + value
         window.location.href = url;
       },
+
       getCookie(c_name) {
         var c_start
         var c_end
@@ -291,8 +456,8 @@
         this.url = url
       },
       fetchdata() {
-//        localStorage.setItem("url", "http://10.3.12.75:9001")
-        localStorage.setItem("url", "http://222.134.52.36:8000")
+        localStorage.setItem("url", "http://10.3.12.75:9001")
+//        localStorage.setItem("url", "http://222.134.52.36:8000")
         var that = this;
 
         that.$http.get(localStorage.getItem("url") + "/getconfig").then(
@@ -340,9 +505,11 @@
                         that.myinfo = JSON.stringify(R)
                         document.cookie = "access_token=" + R.bodyText + "; " + 160;
                         that.userinfo()
-                        that.gettasklog()
-                        that.getdatav()
                         that.gettop3()
+
+
+
+//                        getmark
                       })
                   },
                   onFail: function (err) {
@@ -361,6 +528,50 @@
       }
     }
   }
+
+  /* {
+     var websocket = null;
+     //判断当前浏览器是否支持WebSocket
+     if ('WebSocket' in window) {
+
+       websocket = new WebSocket("ws://10.3.12.75:9001" +"/websocket/123");
+ //                            console.log( "ws://" + localStorage.getItem("url")+"${pageContext.request.contextPath}"  +"/websocket");
+     }
+     else {
+       alert('当前浏览器 Not support websocket')
+     }
+
+     //连接发生错误的回调方法
+     websocket.onerror = function () {
+       console.log("WebSocket连接发生错误");
+     };
+
+     //连接成功建立的回调方法
+     websocket.onopen = function () {
+       console.log("WebSocket连接成功");
+     }
+
+     //接收到消息的回调方法
+     websocket.onmessage = function (event) {
+       var data=event.data;
+       console.log(data)
+       var data=eval("("+event.data+")");
+       if(data.type=="count"){
+         console.log(data.message)
+       }
+     }
+
+     //连接关闭的回调方法
+     websocket.onclose = function () {
+       console.log("WebSocket连接关闭");
+     }
+
+     //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+     window.onbeforeunload = function () {
+       closeWebSocket();
+     }
+
+   }*/
 </script>
 
 <style scoped lang="less">
@@ -395,7 +606,7 @@
     text-align: center;
     padding-top: 0px;
     color: #fff;
-    font-size: 18px;
+    font-size: 10px;
   }
 
   .center img {

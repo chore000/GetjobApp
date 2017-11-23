@@ -5,7 +5,7 @@
 
     <divider>姓名：{{myjs.name}} 一卡通号：{{myjs.jobnumber}}</divider>
     <button-tab>
-      <button-tab-item selected @click.native="getalltasksundo">今天</button-tab-item>
+      <button-tab-item selected @click.native="getalltasksundo">昨天</button-tab-item>
       <button-tab-item @click.native="getalltasksmonth">本月</button-tab-item>
       <button-tab-item @click.native="getalltasksall">总计</button-tab-item>
     </button-tab>
@@ -28,7 +28,7 @@
       </tr>
       </thead>
       <tbody>
-      <tr v-for="(task,index) in alltasks">
+      <tr v-for="(task,index) in alltasks" v-if="task.mark>0">
         <td>{{task.jobnum}}</td>
         <td>{{task.name}}</td>
         <td>{{task.num}}</td>

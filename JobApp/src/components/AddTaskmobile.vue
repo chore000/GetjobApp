@@ -11,7 +11,8 @@
                 title="任务发布时间"></datetime>
       <x-number title="任务分数" v-model="taskmark" button-style="round" :min="1" :max="50"></x-number>
       <x-number title="任务数量" v-model="taskcount" button-style="round" :min="1" :max="50"></x-number>
-      <x-number title="等级要求" v-model="tasklvl" button-style="round" :min="1" :max="50"></x-number>
+      <popup-radio title="等级要求" :options="tasklvlvalues" v-model="tasklvl"></popup-radio>
+
       <popup-radio title="区域选择" :options="arealist" v-model="taskarea"></popup-radio>
     </group>
     <group>
@@ -86,6 +87,7 @@
         taskmark: 1,
         taskcount: 1,
         tasklvl: 1,
+        tasklvlvalues: [],
         tasktypelist: [],
         assigneecase: false,
         taskarea: '',
@@ -129,6 +131,17 @@
           })
 
       },
+      getlvlname() {
+        this.$http.post(localStorage.getItem("url") + "/tasktype/getlvlname", {
+          access_token: this.getCookie("access_token"),
+          credentials: true
+        }, {emulateJSON: true}).then(
+          function (R) {
+            this.tasklvlvalues = R.body
+            console.log(R.body)
+          })
+
+      },
       gettasktype() {
         this.$http.post(localStorage.getItem("url") + "/tasktype/gettasktype", {
           access_token: this.getCookie("access_token"),
@@ -157,12 +170,16 @@
           multiple: false, //是否多选： true多选 false单选； 默认true
           users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
           corpId: corpId, //企业id
+          startWithDepartmentId:0,
+          isNeedSearch:true, // 是否需要搜索功能
           max: 10, //人数限制，当multiple为true才生效，可选范围1-1500
           onSuccess: function (data) {
 
             that.admin = data[0]
             that.postinfo.admin = data[0].emplId
             that.isadmin = true
+            that.checker = data[0]
+            that.postinfo.checker = data[0].emplId
             /* data结构
               [{
                 "name": "张三", //姓名
@@ -188,6 +205,8 @@
           users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
           corpId: corpId, //企业id
           max: 10, //人数限制，当multiple为true才生效，可选范围1-1500
+          startWithDepartmentId:0,
+          isNeedSearch:true, // 是否需要搜索功能
           onSuccess: function (data) {
 
             that.checker = data[0]
@@ -217,6 +236,8 @@
             multiple: false, //是否多选： true多选 false单选； 默认true
             users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
             corpId: corpId, //企业id
+            startWithDepartmentId:0,
+            isNeedSearch:true, // 是否需要搜索功能
             max: 10, //人数限制，当multiple为true才生效，可选范围1-1500
             onSuccess: function (data) {
 
@@ -431,6 +452,7 @@
                         that.userinfo()
                         that.gettasktype()
                         that.gettaskarea()
+                        that.getlvlname()
                       })
                   },
                   onFail: function (err) {

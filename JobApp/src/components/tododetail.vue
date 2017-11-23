@@ -63,13 +63,13 @@
       <x-icon type="ios-plus-empty" size="30" @click="chooseadmin"></x-icon>
 
     </div>
-    <x-table :cell-bordered="false" style="background-color:#fff;">
+    <x-table  style="background-color:#fff;">
       <thead>
       <tr>
         <th>编号</th>
         <th>员工姓名</th>
         <th>任务安排</th>
-        <th>分值,合计：{{allmarks}}</th>
+        <th>合计：{{allmarks}}</th>
         <th v-if="taskdetail.assignee==myjs.userid">操作</th>
 
       </tr>
@@ -82,7 +82,7 @@
           <x-input v-model="user.content" placeholder="任务安排情况"></x-input>
         </th>
         <th>
-          <inline-x-number :min="1" button-style="round" v-model="user.mark"></inline-x-number>
+          <x-input title="分数：" :is-type="isnum"  v-model="user.mark"></x-input>
         </th>
         <th v-if="taskdetail.assignee==myjs.userid">
           <x-button mini type="warn" @click.native="deluser(index)" v-if="!user.isboss">删除</x-button>
@@ -145,6 +145,12 @@
     },
     data() {
       return {
+        isnum: function (value) {
+          return {
+            valid:isNaN(value)===false,
+            msg: '必须为数字'
+          }
+        },
         title: '任务部署',
         myjs: '',
         comment: '',
@@ -164,7 +170,7 @@
     computed: {
       allmarks: function () {
         var sum = 0
-        this.usersinfo.forEach((user) => sum += user.mark
+        this.usersinfo.forEach((user) => sum += parseFloat(user.mark)
         )
         return sum
       }
@@ -242,6 +248,8 @@
           users: [], //默认选中的用户列表，员工userid；成功回调中应包含该信息
           corpId: corpId, //企业id
           max: 10, //人数限制，当multiple为true才生效，可选范围1-1500
+          startWithDepartmentId:-1,
+          isNeedSearch:true, // 是否需要搜索功能
           onSuccess: function (data) {
             for (var i = 0; i < data.length; i++) {
               console.log(data)
